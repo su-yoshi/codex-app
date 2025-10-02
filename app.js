@@ -18,17 +18,17 @@ const clone = (value) => {
 
 const DEFAULTS = {
   kids: [
-    { id: 'kid-hikari', name: 'ひかり', color: '#a855f7', emoji: '🌟' },
-    { id: 'kid-mirai', name: 'みらい', color: '#22d3ee', emoji: '🚀' }
+    { id: 'kid-hikari', name: '縺ｲ縺九ｊ', color: '#a855f7', emoji: '検' },
+    { id: 'kid-mirai', name: '縺ｿ繧峨＞', color: '#22d3ee', emoji: '噫' }
   ],
   tasks: [
-    { id: 'task-dish', name: 'おさらあらい', icon: '🍽️' },
-    { id: 'task-laundry', name: 'せんたくものたたみ', icon: '🧺' },
-    { id: 'task-clean', name: 'おへやのそうじ', icon: '🧹' }
+    { id: 'task-dish', name: '縺翫＆繧峨≠繧峨＞', icon: '鎖・・ },
+    { id: 'task-laundry', name: '縺帙ｓ縺溘￥繧ゅ・縺溘◆縺ｿ', icon: 'ｧｺ' },
+    { id: 'task-clean', name: '縺翫∈繧・・縺昴≧縺・, icon: 'ｧｹ' }
   ],
   rewards: [
-    { id: 'reward-snack', name: 'スペシャルおやつ', stars: 4 },
-    { id: 'reward-game', name: 'ゲームタイム15分', stars: 6 }
+    { id: 'reward-snack', name: '繧ｹ繝壹す繝｣繝ｫ縺翫ｄ縺､', stars: 4 },
+    { id: 'reward-game', name: '繧ｲ繝ｼ繝繧ｿ繧､繝15蛻・, stars: 6 }
   ],
   sound: true,
   tts: false,
@@ -80,28 +80,87 @@ const App = {
       speech: typeof window !== 'undefined' && 'speechSynthesis' in window
     };
   },
+  openModal(modal) {
+    if (!modal) return;
+    if (typeof modal.showModal === 'function') {
+      modal.showModal();
+    } else {
+      modal.setAttribute('open', 'true');
+      if (modal.classList) modal.classList.add('modal--fallback-open');
+    }
+  },
+
+  closeModal(modal) {
+    if (!modal) return;
+    if (typeof modal.close === 'function') {
+      try {
+        modal.close();
+      } catch (_) {
+        modal.removeAttribute('open');
+      }
+    } else {
+      modal.removeAttribute('open');
+    }
+    if (modal.classList) modal.classList.remove('modal--fallback-open');
+  },
+
+  matchesSelector(element, selector) {
+    if (!element || typeof selector !== 'string') return false;
+    const proto = Element.prototype;
+    const fn = proto.matches || proto.msMatchesSelector || proto.webkitMatchesSelector || proto.mozMatchesSelector;
+    if (fn) {
+      return fn.call(element, selector);
+    }
+    return false;
+  },
+
+  closestElement(element, selector) {
+    let current = element;
+    while (current && current.nodeType === 1) {
+      if (this.matchesSelector(current, selector)) {
+        return current;
+      }
+      current = current.parentElement || current.parentNode;
+    }
+    return null;
+  },
   bindEvents() {
     if (this.el.settingsBtn) {
       this.el.settingsBtn.addEventListener('click', () => {
         this.renderSettings();
-        if (this.el.settingsModal && typeof this.el.settingsModal.showModal === 'function') {
-          this.el.settingsModal.showModal();
-        }
+        this.openModal(this.el.settingsModal);
       });
     }
 
     if (this.el.settingsModal) {
-      this.el.settingsModal.addEventListener('click', (event) => {
-        const { action, id } = event.target.dataset || {};
+      const modal = this.el.settingsModal;
+      modal.addEventListener('click', (event) => {
+        const target = event.target;
+        const isModalShell = target === modal && !this.closestElement(target, '.modal-box');
+        if (isModalShell) {
+          this.closeModal(modal);
+          return;
+        }
+        const valueAttr = (target && typeof target.getAttribute === 'function') ? target.getAttribute('value') : null;
+        if (valueAttr === 'cancel') {
+          event.preventDefault();
+          this.closeModal(modal);
+          this.saveSettings();
+          this.renderAll();
+          return;
+        }
+        const targetDataset = (target && target.dataset) ? target.dataset : {};
+        const action = targetDataset.action || ((target && typeof target.getAttribute === 'function') ? target.getAttribute('data-action') : null);
+        const id = targetDataset.id || ((target && typeof target.getAttribute === 'function') ? target.getAttribute('data-id') : null);
         if (!action) return;
         this.handleSettingsAction(action, id);
       });
 
-      this.el.settingsModal.addEventListener('input', (event) => {
+      modal.addEventListener('input', (event) => {
         const target = event.target;
-        const dataset = target.dataset || {};
-        const category = dataset.category;
-        const id = dataset.id;
+        const targetDataset = (target && target.dataset) ? target.dataset : {};
+        const category = targetDataset.category || ((target && typeof target.getAttribute === 'function') ? target.getAttribute('data-category') : null);
+        const id = targetDataset.id || ((target && typeof target.getAttribute === 'function') ? target.getAttribute('data-id') : null);
         if (!category || !id) return;
         if (category === 'kid') {
           const kid = this.settings.kids.find((item) => item.id === id);
@@ -119,7 +178,7 @@ const App = {
         this.renderAll();
       });
 
-      this.el.settingsModal.addEventListener('change', (event) => {
+      modal.addEventListener('change', (event) => {
         if (event.target.name === 'sound-enabled') {
           this.settings.sound = event.target.checked;
         } else if (event.target.name === 'tts-enabled') {
@@ -129,6 +188,12 @@ const App = {
         }
         this.saveSettings();
         this.updateTtsButton();
+      });
+
+      modal.addEventListener('close', () => {
+        if (modal.classList) modal.classList.remove('modal--fallback-open');
+        this.saveSettings();
+        this.renderAll();
       });
     }
 
@@ -148,11 +213,13 @@ const App = {
 
     if (this.el.dashboardTools) {
       this.el.dashboardTools.addEventListener('click', (event) => {
-        const btn = event.target.closest('button[data-action]');
+        const btn = this.closestElement(event.target, 'button[data-action]');
         if (!btn) return;
-        if (btn.dataset.action === 'reset-day') {
+        const dataset = (btn && btn.dataset) ? btn.dataset : {};
+        const action = dataset.action || ((btn && typeof btn.getAttribute === 'function') ? btn.getAttribute('data-action') : null);
+        if (action === 'reset-day') {
           this.resetSelectedDay();
-        } else if (btn.dataset.action === 'reset-month') {
+        } else if (action === 'reset-month') {
           this.resetCurrentMonth();
         }
       });
@@ -160,37 +227,43 @@ const App = {
 
     if (this.el.kidsDashboard) {
       this.el.kidsDashboard.addEventListener('click', (event) => {
-        const resetBtn = event.target.closest('[data-action="reset-kid"]');
-        if (resetBtn) {
-          this.resetKidTasks(resetBtn.dataset.kidId);
+        const resetBtn = this.closestElement(event.target, '[data-action="reset-kid"]');
+        const resetKidId = resetBtn ? ((resetBtn.dataset && resetBtn.dataset.kidId) || (typeof resetBtn.getAttribute === 'function' ? resetBtn.getAttribute('data-kid-id') : null)) : null;
+        if (resetKidId) {
+          this.resetKidTasks(resetKidId);
           return;
         }
-        const toggle = event.target.closest('.task-toggle-btn');
+        const toggle = this.closestElement(event.target, '.task-toggle-btn');
         if (!toggle) return;
-        const { kidId, taskId } = toggle.dataset;
+        const toggleDataset = (toggle && toggle.dataset) ? toggle.dataset : {};
+        const kidId = toggleDataset.kidId || ((toggle && typeof toggle.getAttribute === 'function') ? toggle.getAttribute('data-kid-id') : null);
+        const taskId = toggleDataset.taskId || ((toggle && typeof toggle.getAttribute === 'function') ? toggle.getAttribute('data-task-id') : null);
         if (kidId && taskId) {
           this.toggleTask(kidId, taskId);
         }
       });
     }
   },
+
   initCalendar() {
     if (!this.features.calendar || !this.el.calendarContainer) {
       this.fallbackCalendarActive = true;
       if (this.el.calendarContainer) {
-      this.el.calendarContainer.classList.add('calendar-fallback');
-    }
+        this.el.calendarContainer.classList.add('calendar-fallback');
+      }
       if (this.el.calendarContainer && !this.el.calendarContainer.dataset.fallbackBound) {
         this.el.calendarContainer.addEventListener('click', (event) => {
-          const nav = event.target.closest('[data-fallback-nav]');
+          const nav = this.closestElement(event.target, '[data-fallback-nav]');
           if (nav) {
-            const offset = nav.dataset.fallbackNav === 'prev' ? -1 : 1;
+            const fallbackNav = (nav.dataset && nav.dataset.fallbackNav) || (typeof nav.getAttribute === 'function' ? nav.getAttribute('data-fallback-nav') : null);
+            const offset = fallbackNav === 'prev' ? -1 : 1;
             this.shiftMonth(offset);
             return;
           }
-          const cell = event.target.closest('[data-date]');
-          if (!cell || !cell.dataset.date) return;
-          this.selectedDate = this.parseDateKey(cell.dataset.date);
+          const cell = this.closestElement(event.target, '[data-date]');
+          const dateAttr = cell ? ((cell.dataset && cell.dataset.date) || (typeof cell.getAttribute === 'function' ? cell.getAttribute('data-date') : null)) : null;
+          if (!dateAttr) return;
+          this.selectedDate = this.parseDateKey(dateAttr);
           this.renderAll();
         });
         this.el.calendarContainer.dataset.fallbackBound = 'true';
@@ -274,15 +347,15 @@ const App = {
 
     this.settings.kids = this.settings.kids.map((kid, index) => ({
       id: kid.id || `kid-${index}-${Date.now()}`,
-      name: kid.name || `ヒーロー${index + 1}`,
+      name: kid.name || `繝偵・繝ｭ繝ｼ${index + 1}`,
       color: kid.color || DEFAULTS.kids[index % DEFAULTS.kids.length].color,
-      emoji: kid.emoji !== undefined ? kid.emoji : '🧒'
+      emoji: kid.emoji !== undefined ? kid.emoji : 'ｧ・
     }));
 
     this.settings.tasks = this.settings.tasks.map((task, index) => ({
       id: task.id || `task-${index}-${Date.now()}`,
-      name: task.name || `クエスト${index + 1}`,
-      icon: task.icon || '⭐'
+      name: task.name || `繧ｯ繧ｨ繧ｹ繝・{index + 1}`,
+      icon: task.icon || '箝・
     }));
 
     this.settings.ttsRate = Number.isFinite(this.settings.ttsRate) ? this.settings.ttsRate : 1;
@@ -355,7 +428,7 @@ const App = {
     const daily = this.loadData(key, {});
     if (!daily[kidId]) return;
     const date = this.selectedDate;
-    if (!confirm(`${date.getMonth() + 1}月${date.getDate()}日の${this.getKidName(kidId)}のおてつだいをリセットしますか？`)) return;
+    if (!confirm(`${date.getMonth() + 1}譛・{date.getDate()}譌･縺ｮ${this.getKidName(kidId)}縺ｮ縺翫※縺､縺縺・ｒ繝ｪ繧ｻ繝・ヨ縺励∪縺吶°・歔)) return;
     delete daily[kidId];
     this.saveData(key, daily);
     this.renderAll();
@@ -363,14 +436,14 @@ const App = {
 
   resetSelectedDay() {
     const date = this.selectedDate;
-    if (!confirm(`${date.getMonth() + 1}月${date.getDate()}日の記録をすべてリセットしますか？`)) return;
+    if (!confirm(`${date.getMonth() + 1}譛・{date.getDate()}譌･縺ｮ險倬鹸繧偵☆縺ｹ縺ｦ繝ｪ繧ｻ繝・ヨ縺励∪縺吶°・歔)) return;
     localStorage.removeItem(`${STORAGE.daily}${this.formatDateKey(date)}`);
     this.renderAll();
   },
 
   resetCurrentMonth() {
     const date = this.selectedDate;
-    if (!confirm(`${date.getFullYear()}年${date.getMonth() + 1}月の記録をすべてリセットしますか？`)) return;
+    if (!confirm(`${date.getFullYear()}蟷ｴ${date.getMonth() + 1}譛医・險倬鹸繧偵☆縺ｹ縺ｦ繝ｪ繧ｻ繝・ヨ縺励∪縺吶°・歔)) return;
     const monthKey = this.formatMonthKey(date);
     Object.keys(localStorage)
       .filter(key => key.startsWith(STORAGE.daily) && key.includes(monthKey))
@@ -381,7 +454,7 @@ const App = {
 
   getKidName(kidId) {
     const kid = this.settings.kids.find(k => k.id === kidId);
-    return kid ? kid.name : 'ヒーロー';
+    return kid ? kid.name : '繝偵・繝ｭ繝ｼ';
   },
 
   getDailyCompletion(kidId, date) {
@@ -482,7 +555,7 @@ const App = {
         dots,
         state,
         avgCompletion,
-        tooltip: `${dateKey} | ${tooltipParts.join(' / ')} | 平均${avgCompletion}%`
+        tooltip: `${dateKey} | ${tooltipParts.join(' / ')} | 蟷ｳ蝮・{avgCompletion}%`
       };
     });
 
@@ -498,7 +571,7 @@ const App = {
     const date = this.selectedDate;
     const kids = this.settings.kids;
     const tasks = this.settings.tasks;
-    const dayName = ['日', '月', '火', '水', '木', '金', '土'][date.getDay()];
+    const dayName = ['譌･', '譛・, '轣ｫ', '豌ｴ', '譛ｨ', '驥・, '蝨・][date.getDay()];
     const greeting = this.getGreeting();
 
     let totalDone = 0;
@@ -517,23 +590,23 @@ const App = {
 
     const completionRate = totalTasks ? Math.round((totalDone / totalTasks) * 100) : 0;
     const chips = [
-      `${kids.length}人のヒーロー`,
-      tasks.length ? `${tasks.length}クエスト` : 'クエスト未設定',
-      `今日の進捗 ${totalDone}/${totalTasks}`
+      `${kids.length}莠ｺ縺ｮ繝偵・繝ｭ繝ｼ`,
+      tasks.length ? `${tasks.length}繧ｯ繧ｨ繧ｹ繝・ : '繧ｯ繧ｨ繧ｹ繝域悴險ｭ螳・,
+      `莉頑律縺ｮ騾ｲ謐・${totalDone}/${totalTasks}`
     ];
     const highlight = champion
-      ? `${champion.kid.name}は${champion.streak}日れんぞくチャレンジ中！`
-      : '今日もみんなでがんばろう！';
+      ? `${champion.kid.name}縺ｯ${champion.streak}譌･繧後ｓ縺槭￥繝√Ε繝ｬ繝ｳ繧ｸ荳ｭ・～
+      : '莉頑律繧ゅ∩繧薙↑縺ｧ縺後ｓ縺ｰ繧阪≧・・;
 
     this.el.hero.innerHTML = `
       <p class="hero__greeting">${greeting}</p>
-      <h1 class="hero__title">${date.getMonth() + 1}月${date.getDate()}日(${dayName}) のヒーローログ</h1>
+      <h1 class="hero__title">${date.getMonth() + 1}譛・{date.getDate()}譌･(${dayName}) 縺ｮ繝偵・繝ｭ繝ｼ繝ｭ繧ｰ</h1>
       <p class="hero__highlight">${highlight}</p>
       <div class="hero__meta">
         <div class="hero__chips">
           ${chips.map(text => `<span class="chip">${text}</span>`).join('')}
         </div>
-        <span class="hero__meter">平均達成率 ${completionRate}%</span>
+        <span class="hero__meter">蟷ｳ蝮・＃謌千紫 ${completionRate}%</span>
       </div>
     `;
   },
@@ -544,8 +617,8 @@ const App = {
     const date = this.selectedDate;
     const isToday = this.formatDateKey(date) === this.formatDateKey(new Date());
     const dateLabel = isToday
-      ? '今日のおてつだい'
-      : `${date.getMonth() + 1}月${date.getDate()}日のおてつだい`;
+      ? '莉頑律縺ｮ縺翫※縺､縺縺・
+      : `${date.getMonth() + 1}譛・{date.getDate()}譌･縺ｮ縺翫※縺､縺縺Я;
     if (this.el.dateHeading) {
       this.el.dateHeading.textContent = dateLabel;
     }
@@ -554,11 +627,11 @@ const App = {
     const tasks = this.settings.tasks;
 
     if (!kids.length) {
-      this.el.kidsDashboard.innerHTML = '<div class="empty-state">設定からヒーローを追加しよう！</div>';
+      this.el.kidsDashboard.innerHTML = '<div class="empty-state">險ｭ螳壹°繧峨ヲ繝ｼ繝ｭ繝ｼ繧定ｿｽ蜉縺励ｈ縺・ｼ・/div>';
       return;
     }
     if (!tasks.length) {
-      this.el.kidsDashboard.innerHTML = '<div class="empty-state">クエストを追加するとここに表示されます。</div>';
+      this.el.kidsDashboard.innerHTML = '<div class="empty-state">繧ｯ繧ｨ繧ｹ繝医ｒ霑ｽ蜉縺吶ｋ縺ｨ縺薙％縺ｫ陦ｨ遉ｺ縺輔ｌ縺ｾ縺吶・/div>';
       return;
     }
 
@@ -569,7 +642,7 @@ const App = {
       const fragment = this.el.kidTemplate.content.cloneNode(true);
       const card = fragment.querySelector('.kid-card');
       card.dataset.kidId = kid.id;
-      fragment.querySelector('[data-role="avatar"]').textContent = kid.emoji || '🧒';
+      fragment.querySelector('[data-role="avatar"]').textContent = kid.emoji || 'ｧ・;
       fragment.querySelector('[data-role="name"]').textContent = kid.name;
       fragment.querySelector('[data-role="streak"]').textContent = this.formatStreak(kid.id);
       fragment.querySelector('[data-role="stars"]').textContent = this.calculateMonthlyStars(kid.id);
@@ -623,8 +696,8 @@ const App = {
             <span class="kid-task__icon">${task.icon || ''}</span>
             <span>${task.name}</span>
           </span>
-          <button class="btn btn-sm ${isDone ? 'btn-success' : 'btn-outline'} btn-circle task-toggle-btn" data-kid-id="${kid.id}" data-task-id="${task.id}" aria-label="${kid.name}の${task.name}を${isDone ? '未完了にする' : '完了にする'}">
-            ${isDone ? '✔️' : '＋'}
+          <button class="btn btn-sm ${isDone ? 'btn-success' : 'btn-outline'} btn-circle task-toggle-btn" data-kid-id="${kid.id}" data-task-id="${task.id}" aria-label="${kid.name}縺ｮ${task.name}繧・{isDone ? '譛ｪ螳御ｺ・↓縺吶ｋ' : '螳御ｺ・↓縺吶ｋ'}">
+            ${isDone ? '笨費ｸ・ : '・・}
           </button>
         `;
         list.appendChild(li);
@@ -639,7 +712,7 @@ const App = {
     const kids = this.settings.kids;
     const tasks = this.settings.tasks;
     if (!kids.length || !tasks.length) {
-      this.el.monthlySummary.innerHTML = '<div class="empty-state">ヒーローとクエストを登録するとサマリーが表示されます。</div>';
+      this.el.monthlySummary.innerHTML = '<div class="empty-state">繝偵・繝ｭ繝ｼ縺ｨ繧ｯ繧ｨ繧ｹ繝医ｒ逋ｻ骭ｲ縺吶ｋ縺ｨ繧ｵ繝槭Μ繝ｼ縺瑚｡ｨ遉ｺ縺輔ｌ縺ｾ縺吶・/div>';
       return;
     }
 
@@ -666,7 +739,7 @@ const App = {
           <span>${doneTotal}/${taskTotal}</span>
         </div>
         <div class="summary-progress"><span style="width:${percent}%"></span></div>
-        <p class="summary-meta">平均 ${percent}% / 今月の⭐ ${this.calculateMonthlyStars(kid.id)}</p>
+        <p class="summary-meta">蟷ｳ蝮・${percent}% / 莉頑怦縺ｮ箝・${this.calculateMonthlyStars(kid.id)}</p>
       `;
       this.el.monthlySummary.appendChild(item);
     });
@@ -688,20 +761,20 @@ const App = {
       <div class="settings-row">
         <div class="settings-row__fields">
           <label class="form-control">
-            <span class="label-text">なまえ</span>
+            <span class="label-text">縺ｪ縺ｾ縺・/span>
             <input class="input input-bordered input-sm" data-category="kid" data-id="${kid.id}" name="name" value="${kid.name}" />
           </label>
           <label class="form-control">
-            <span class="label-text">色</span>
+            <span class="label-text">濶ｲ</span>
             <input class="input input-bordered input-sm" type="color" data-category="kid" data-id="${kid.id}" name="color" value="${kid.color}" />
           </label>
           <label class="form-control">
-            <span class="label-text">絵文字</span>
+            <span class="label-text">邨ｵ譁・ｭ・/span>
             <input class="input input-bordered input-sm" data-category="kid" data-id="${kid.id}" name="emoji" value="${kid.emoji || ''}" />
           </label>
         </div>
         <div class="settings-row__actions">
-          <button type="button" class="btn btn-xs" data-action="remove-kid" data-id="${kid.id}">削除</button>
+          <button type="button" class="btn btn-xs" data-action="remove-kid" data-id="${kid.id}">蜑企勁</button>
         </div>
       </div>
     `).join('');
@@ -709,15 +782,15 @@ const App = {
     const tasksSection = this.settings.tasks.map((task) => `
       <div class="settings-row">
         <label class="form-control">
-          <span class="label-text">クエスト名</span>
+          <span class="label-text">繧ｯ繧ｨ繧ｹ繝亥錐</span>
           <input class="input input-bordered input-sm" data-category="task" data-id="${task.id}" name="name" value="${task.name}" />
         </label>
         <label class="form-control">
-          <span class="label-text">アイコン（絵文字）</span>
+          <span class="label-text">繧｢繧､繧ｳ繝ｳ・育ｵｵ譁・ｭ暦ｼ・/span>
           <input class="input input-bordered input-sm" data-category="task" data-id="${task.id}" name="icon" value="${task.icon || ''}" />
         </label>
         <div class="settings-row__actions">
-          <button type="button" class="btn btn-xs" data-action="remove-task" data-id="${task.id}">削除</button>
+          <button type="button" class="btn btn-xs" data-action="remove-task" data-id="${task.id}">蜑企勁</button>
         </div>
       </div>
     `).join('');
@@ -725,34 +798,34 @@ const App = {
     this.el.settingsContent.innerHTML = `
       <section class="settings-group">
         <header>
-          <h4 class="section-heading">ヒーロー</h4>
-          <p class="modal-caption">家族のプロフィールを編集します</p>
+          <h4 class="section-heading">繝偵・繝ｭ繝ｼ</h4>
+          <p class="modal-caption">螳ｶ譌上・繝励Ο繝輔ぅ繝ｼ繝ｫ繧堤ｷｨ髮・＠縺ｾ縺・/p>
         </header>
-        ${kidsSection || '<p class="empty-state">ヒーローがまだいません</p>'}
-        <button type="button" class="btn btn-sm mt-3" data-action="add-kid">ヒーローを追加</button>
+        ${kidsSection || '<p class="empty-state">繝偵・繝ｭ繝ｼ縺後∪縺縺・∪縺帙ｓ</p>'}
+        <button type="button" class="btn btn-sm mt-3" data-action="add-kid">繝偵・繝ｭ繝ｼ繧定ｿｽ蜉</button>
       </section>
       <section class="settings-group">
         <header>
-          <h4 class="section-heading">クエスト</h4>
-          <p class="modal-caption">毎日のおてつだいを登録</p>
+          <h4 class="section-heading">繧ｯ繧ｨ繧ｹ繝・/h4>
+          <p class="modal-caption">豈取律縺ｮ縺翫※縺､縺縺・ｒ逋ｻ骭ｲ</p>
         </header>
-        ${tasksSection || '<p class="empty-state">クエストを追加してください</p>'}
-        <button type="button" class="btn btn-sm mt-3" data-action="add-task">クエストを追加</button>
+        ${tasksSection || '<p class="empty-state">繧ｯ繧ｨ繧ｹ繝医ｒ霑ｽ蜉縺励※縺上□縺輔＞</p>'}
+        <button type="button" class="btn btn-sm mt-3" data-action="add-task">繧ｯ繧ｨ繧ｹ繝医ｒ霑ｽ蜉</button>
       </section>
       <section class="settings-group">
         <header>
-          <h4 class="section-heading">サウンド / 音声</h4>
+          <h4 class="section-heading">繧ｵ繧ｦ繝ｳ繝・/ 髻ｳ螢ｰ</h4>
         </header>
         <label class="label cursor-pointer">
-          <span class="label-text">効果音</span>
+          <span class="label-text">蜉ｹ譫憺浹</span>
           <input type="checkbox" class="toggle" name="sound-enabled" ${this.settings.sound ? 'checked' : ''} />
         </label>
         <label class="label cursor-pointer">
-          <span class="label-text">音声読み上げ</span>
+          <span class="label-text">髻ｳ螢ｰ隱ｭ縺ｿ荳翫￡</span>
           <input type="checkbox" class="toggle" name="tts-enabled" ${this.settings.tts ? 'checked' : ''} />
         </label>
         <label class="form-control">
-          <span class="label-text">読み上げ速度 (${this.settings.ttsRate})</span>
+          <span class="label-text">隱ｭ縺ｿ荳翫￡騾溷ｺｦ (${this.settings.ttsRate})</span>
           <input type="range" min="0.6" max="1.5" step="0.1" name="tts-rate" value="${this.settings.ttsRate}" />
         </label>
       </section>
@@ -763,17 +836,17 @@ const App = {
     if (action === 'add-kid') {
       this.settings.kids.push({
         id: `kid-${Date.now()}`,
-        name: 'なまえ',
+        name: '縺ｪ縺ｾ縺・,
         color: '#f472b6',
-        emoji: '🧒'
+        emoji: 'ｧ・
       });
     } else if (action === 'remove-kid') {
       this.settings.kids = this.settings.kids.filter(k => k.id !== id);
     } else if (action === 'add-task') {
       this.settings.tasks.push({
         id: `task-${Date.now()}`,
-        name: 'あたらしいクエスト',
-        icon: '⭐'
+        name: '縺ゅ◆繧峨＠縺・け繧ｨ繧ｹ繝・,
+        icon: '箝・
       });
     } else if (action === 'remove-task') {
       this.settings.tasks = this.settings.tasks.filter(t => t.id !== id);
@@ -788,45 +861,45 @@ const App = {
   createProgressHeadline(done, total) {
     if (!total) {
       return {
-        title: 'クエストはまだありません',
-        caption: '設定でクエストを追加してみよう'
+        title: '繧ｯ繧ｨ繧ｹ繝医・縺ｾ縺縺ゅｊ縺ｾ縺帙ｓ',
+        caption: '險ｭ螳壹〒繧ｯ繧ｨ繧ｹ繝医ｒ霑ｽ蜉縺励※縺ｿ繧医≧'
       };
     }
     if (done === total) {
       return {
-        title: 'ぜんぶクリア！おめでとう 🎉',
-        caption: '今日はもう完璧！'
+        title: '縺懊ｓ縺ｶ繧ｯ繝ｪ繧｢・√♀繧√〒縺ｨ縺・脂',
+        caption: '莉頑律縺ｯ繧ゅ≧螳檎挑・・
       };
     }
     if (done === 0) {
       return {
-        title: 'ここからスタート！',
-        caption: 'まずは1つチャレンジしてみよう'
+        title: '縺薙％縺九ｉ繧ｹ繧ｿ繝ｼ繝茨ｼ・,
+        caption: '縺ｾ縺壹・1縺､繝√Ε繝ｬ繝ｳ繧ｸ縺励※縺ｿ繧医≧'
       };
     }
     return {
-      title: `あと${total - done}個でコンプリート！`,
-      caption: 'ペースはこのままでばっちり！'
+      title: `縺ゅ→${total - done}蛟九〒繧ｳ繝ｳ繝励Μ繝ｼ繝茨ｼ～,
+      caption: '繝壹・繧ｹ縺ｯ縺薙・縺ｾ縺ｾ縺ｧ縺ｰ縺｣縺｡繧奇ｼ・
     };
   },
 
   formatStreak(kidId) {
     const streak = this.calculateStreak(kidId);
-    if (!streak) return '今日がスタート！';
-    if (streak === 1) return '1日クリア中';
-    return `${streak}日れんぞくクリア`;
+    if (!streak) return '莉頑律縺後せ繧ｿ繝ｼ繝茨ｼ・;
+    if (streak === 1) return '1譌･繧ｯ繝ｪ繧｢荳ｭ';
+    return `${streak}譌･繧後ｓ縺槭￥繧ｯ繝ｪ繧｢`;
   },
 
   getGreeting() {
     const hour = new Date().getHours();
-    if (hour < 10) return 'おはよう！今日もヒーロー活動を始めよう';
-    if (hour < 18) return 'こんにちは！新しいクエストに挑戦しよう';
-    return 'こんばんは！今日の振り返りをしよう';
+    if (hour < 10) return '縺翫・繧医≧・∽ｻ頑律繧ゅヲ繝ｼ繝ｭ繝ｼ豢ｻ蜍輔ｒ蟋九ａ繧医≧';
+    if (hour < 18) return '縺薙ｓ縺ｫ縺｡縺ｯ・∵眠縺励＞繧ｯ繧ｨ繧ｹ繝医↓謖第姶縺励ｈ縺・;
+    return '縺薙ｓ縺ｰ繧薙・・∽ｻ頑律縺ｮ謖ｯ繧願ｿ斐ｊ繧偵＠繧医≧';
   },
 
   updateTtsButton() {
     if (!this.el.ttsIcon || !this.el.ttsBtn) return;
-    this.el.ttsIcon.textContent = this.settings.tts ? '🔊' : '🔈';
+    this.el.ttsIcon.textContent = this.settings.tts ? '矧' : '蝿';
     this.el.ttsBtn.setAttribute('aria-pressed', this.settings.tts ? 'true' : 'false');
   },
 
@@ -856,9 +929,9 @@ const App = {
       });
     }
     if (this.settings.tts && this.features.speech) {
-      const kidName = kid && kid.name ? kid.name : 'ヒーロー';
-      const taskName = task && task.name ? task.name : 'おてつだい';
-      const utter = new SpeechSynthesisUtterance(`${kidName}、${taskName}をクリア！`);
+      const kidName = kid && kid.name ? kid.name : '繝偵・繝ｭ繝ｼ';
+      const taskName = task && task.name ? task.name : '縺翫※縺､縺縺・;
+      const utter = new SpeechSynthesisUtterance(`${kidName}縲・{taskName}繧偵け繝ｪ繧｢・～);
       utter.lang = 'ja-JP';
       utter.rate = Math.min(1.6, Math.max(0.5, this.settings.ttsRate || 1));
       window.speechSynthesis.cancel();
@@ -908,7 +981,7 @@ const App = {
     const first = new Date(year, month, 1);
     const firstDay = first.getDay();
     const daysInMonth = new Date(year, month + 1, 0).getDate();
-    const weekdayLabels = ['日', '月', '火', '水', '木', '金', '土'];
+    const weekdayLabels = ['譌･', '譛・, '轣ｫ', '豌ｴ', '譛ｨ', '驥・, '蝨・];
 
     let day = 1;
     const rows = [];
@@ -954,11 +1027,11 @@ const App = {
 
     container.innerHTML = `
       <div class="fallback-calendar__header">
-        <button type="button" class="btn btn-xs btn-ghost" data-fallback-nav="prev" aria-label="前の月へ">←</button>
-        <strong>${year}年${month + 1}月</strong>
-        <button type="button" class="btn btn-xs btn-ghost" data-fallback-nav="next" aria-label="次の月へ">→</button>
+        <button type="button" class="btn btn-xs btn-ghost" data-fallback-nav="prev" aria-label="蜑阪・譛医∈">竊・/button>
+        <strong>${year}蟷ｴ${month + 1}譛・/strong>
+        <button type="button" class="btn btn-xs btn-ghost" data-fallback-nav="next" aria-label="谺｡縺ｮ譛医∈">竊・/button>
       </div>
-      <table class="fallback-calendar" aria-label="おてつだいカレンダー">
+      <table class="fallback-calendar" aria-label="縺翫※縺､縺縺・き繝ｬ繝ｳ繝繝ｼ">
         <thead>
           <tr>${weekdayLabels.map(label => `<th scope="col">${label}</th>`).join('')}</tr>
         </thead>
@@ -987,6 +1060,16 @@ const App = {
 };
 
 document.addEventListener('DOMContentLoaded', () => App.init());
+
+
+
+
+
+
+
+
+
+
 
 
 
