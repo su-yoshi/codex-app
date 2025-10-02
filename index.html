@@ -1,23 +1,23 @@
 ﻿<!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Aurora Family Chore Calendar</title>
-  <link rel="stylesheet" href="styles.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>オーロラお手伝いカレンダー</title>
+  <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
   <header class="site-header">
     <div class="brand">
       <div class="brand-icon">Aurora</div>
       <div class="brand-copy">
-        <h1 class="brand-title">Family Chore Calendar</h1>
-        <p class="brand-sub">Plan together, celebrate together.</p>
+        <h1 class="brand-title">お手伝いカレンダー</h1>
+        <p class="brand-sub">家族みんなで予定をシェアしよう</p>
       </div>
     </div>
     <nav class="actions">
-      <button id="settingsButton" class="action-btn">Settings</button>
-      <button id="exportButton" class="action-btn">Export</button>
+      <button id="settingsButton" class="action-btn">設定</button>
+      <button id="exportButton" class="action-btn">エクスポート</button>
     </nav>
   </header>
 
@@ -27,18 +27,20 @@
     <section class="panels">
       <section class="panel calendar-panel">
         <header class="panel-header">
-          <h2>Calendar</h2>
+          <h2>カレンダー</h2>
           <div class="calendar-nav">
-            <button id="prevMonth" aria-label="Previous month">◀</button>
+            <button id="prevMonth" aria-label="前の月">◀</button>
             <div id="calendarLabel"></div>
-            <button id="nextMonth" aria-label="Next month">▶</button>
+            <button id="nextMonth" aria-label="次の月">▶</button>
           </div>
         </header>
-        <div id="calendar" class="calendar"></div>
+        <div class="calendar-wrapper">
+          <div id="calendar" class="calendar"></div>
+        </div>
         <footer class="calendar-legend">
-          <span class="swatch swatch-complete">All done</span>
-          <span class="swatch swatch-partial">In progress</span>
-          <span class="swatch swatch-empty">No tasks</span>
+          <span class="swatch swatch-complete">全部完了</span>
+          <span class="swatch swatch-partial">途中まで</span>
+          <span class="swatch swatch-empty">未着手</span>
         </footer>
       </section>
 
@@ -46,8 +48,8 @@
         <header class="panel-header">
           <h2 id="selectedDateLabel"></h2>
           <div class="dashboard-actions">
-            <button data-action="reset-day">Reset day</button>
-            <button data-action="reset-month">Reset month</button>
+            <button data-action="reset-day">今日をリセット</button>
+            <button data-action="reset-month">今月をリセット</button>
           </div>
         </header>
         <div id="dashboard" class="kids-grid"></div>
@@ -56,23 +58,23 @@
 
     <section class="panel summary-panel">
       <header class="panel-header">
-        <h2>Monthly Highlights</h2>
+        <h2>月間ハイライト</h2>
       </header>
       <div id="summary" class="summary-grid"></div>
     </section>
   </main>
 
-  <div id="settingsModal" class="modal" role="dialog" aria-modal="true" aria-hidden="true">
+  <div id="settingsModal" class="modal" aria-hidden="true" aria-modal="true" role="dialog">
     <div class="modal-backdrop" data-close="settings"></div>
     <div class="modal-content">
       <header class="modal-header">
-        <h2>Workspace Settings</h2>
-        <button class="modal-close" data-close="settings" aria-label="Close">×</button>
+        <h2>設定</h2>
+        <button class="modal-close" data-close="settings" aria-label="閉じる">×</button>
       </header>
       <div class="modal-body" id="settingsBody"></div>
       <footer class="modal-footer">
-        <button class="primary" id="settingsSave">Save</button>
-        <button data-close="settings">Cancel</button>
+        <button id="settingsSave" class="primary" type="button">保存</button>
+        <button class="ghost" data-close="settings" type="button">キャンセル</button>
       </footer>
     </div>
   </div>
@@ -88,7 +90,7 @@
           </div>
         </div>
         <div class="kid-stars">
-          <span class="label">Stars</span>
+          <span class="label">スター</span>
           <strong class="value"></strong>
         </div>
       </header>

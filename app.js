@@ -2,13 +2,13 @@
 
 const DEFAULT_DATA = {
   kids: [
-    { id: 'hikari', name: 'Hikari', color: '#8363ff' },
-    { id: 'mirai', name: 'Mirai', color: '#22c1e5' }
+    { id: 'hikari', name: 'ひかり', color: '#8363ff' },
+    { id: 'mirai', name: 'みらい', color: '#22c1e5' }
   ],
   tasks: [
-    { id: 'dishes', name: 'Dishes' },
-    { id: 'laundry', name: 'Laundry fold' },
-    { id: 'room', name: 'Room tidy' }
+    { id: 'dishes', name: 'おさらあらい' },
+    { id: 'laundry', name: 'せんたくものたたみ' },
+    { id: 'room', name: 'おへやのそうじ' }
   ]
 };
 
@@ -77,7 +77,7 @@ const App = {
       };
       this.ensureIntegrity();
     } catch (error) {
-      console.warn('Failed to load state, resetting.', error);
+      console.warn('状態の復元に失敗しました。初期化します。', error);
       this.state = { log: {}, spent: {} };
       this.data = UTIL.clone(DEFAULT_DATA);
       this.saveState();
@@ -96,18 +96,20 @@ const App = {
   ensureIntegrity() {
     const kidIds = new Set();
     this.data.kids = this.data.kids.map((kid, index) => {
-      const safeId = kid && kid.id ? String(kid.id) : `kid-${index}`;
+      const safeId = kid && kid.id ? String(kid.id) : this.generateId('kid');
       kidIds.add(safeId);
+      let color = kid && kid.color ? String(kid.color) : '#6366f1';
+      if (!/^#[0-9a-fA-F]{6}$/.test(color)) color = '#6366f1';
       return {
         id: safeId,
-        name: kid && kid.name ? String(kid.name).substring(0, 30) : `Hero ${index + 1}`,
-        color: kid && kid.color ? String(kid.color) : '#6366f1'
+        name: kid && kid.name ? String(kid.name).substring(0, 30) : `ヒーロー${index + 1}`,
+        color
       };
     });
 
     this.data.tasks = this.data.tasks.map((task, index) => ({
-      id: task && task.id ? String(task.id) : `task-${index}`,
-      name: task && task.name ? String(task.name).substring(0, 28) : `Task ${index + 1}`
+      id: task && task.id ? String(task.id) : this.generateId('task'),
+      name: task && task.name ? String(task.name).substring(0, 28) : `クエスト${index + 1}`
     }));
 
     const validTaskIds = new Set(this.data.tasks.map(t => t.id));
@@ -134,14 +136,17 @@ const App = {
     document.getElementById('prevMonth').addEventListener('click', () => {
       this.monthDate = new Date(this.monthDate.getFullYear(), this.monthDate.getMonth() - 1, 1);
       this.renderCalendar();
+      this.renderSummary();
     });
+
     document.getElementById('nextMonth').addEventListener('click', () => {
       this.monthDate = new Date(this.monthDate.getFullYear(), this.monthDate.getMonth() + 1, 1);
       this.renderCalendar();
+      this.renderSummary();
     });
 
     this.calendarEl.addEventListener('click', (event) => {
-      const target = event.target.closest('[data-date]');
+      const target = this.closestElement(event.target, '[data-date]');
       if (!target) return;
       const selected = target.getAttribute('data-date');
       if (!selected) return;
@@ -150,18 +155,21 @@ const App = {
       this.renderAll();
     });
 
-    document.querySelector('.dashboard-panel .panel-header').addEventListener('click', (event) => {
-      const button = event.target.closest('button');
-      if (!button) return;
-      if (button.dataset.action === 'reset-day') {
-        this.resetDay();
-      } else if (button.dataset.action === 'reset-month') {
-        this.resetMonth();
-      }
-    });
+    const dashboardHeader = document.querySelector('.dashboard-panel .panel-header');
+    if (dashboardHeader) {
+      dashboardHeader.addEventListener('click', (event) => {
+        const button = this.closestElement(event.target, 'button[data-action]');
+        if (!button) return;
+        if (button.dataset.action === 'reset-day') {
+          this.resetDay();
+        } else if (button.dataset.action === 'reset-month') {
+          this.resetMonth();
+        }
+      });
+    }
 
     this.dashboardEl.addEventListener('click', (event) => {
-      const toggle = event.target.closest('[data-toggle-task]');
+      const toggle = this.closestElement(event.target, '[data-toggle-task]');
       if (!toggle) return;
       const kidId = toggle.getAttribute('data-kid');
       const taskId = toggle.getAttribute('data-task');
@@ -181,10 +189,13 @@ const App = {
       this.saveSettingsFromModal();
     });
 
+    if (this.settingsBody) {
+      this.settingsBody.addEventListener('click', (event) => this.handleSettingsClick(event));
+    }
+
     this.settingsModal.addEventListener('click', (event) => {
-      if (event.target.dataset.close === 'settings') {
-        this.closeSettings();
-      }
+      const closer = this.closestElement(event.target, '[data-close="settings"]');
+      if (closer) this.closeSettings();
     });
   },
 
@@ -225,12 +236,12 @@ const App = {
   },
 
   renderHero() {
-    const today = new Date();
     const greeting = this.getGreeting();
+    const dateText = this.describeSelectedDate();
     const totalTasks = this.data.tasks.length * this.data.kids.length;
-    let done = 0;
     const dateKey = UTIL.formatDate(this.selectedDate);
     const dayLog = this.state.log[dateKey] || {};
+    let done = 0;
     Object.keys(dayLog).forEach(kidId => {
       const kidRecord = dayLog[kidId];
       Object.keys(kidRecord).forEach(taskId => {
@@ -243,12 +254,12 @@ const App = {
       <div class="hero-grid">
         <div>
           <p class="hero-sub">${greeting}</p>
-          <h2>${this.describeSelectedDate()}</h2>
-          <p class="hero-meta">${this.data.kids.length} heroes · ${this.data.tasks.length} quests</p>
+          <h2>${dateText}のヒーローログ</h2>
+          <p class="hero-meta">${this.data.kids.length}人 / ${this.data.tasks.length}クエスト</p>
         </div>
         <div class="hero-progress">
           <span>${percent}%</span>
-          <p>of today's quests completed</p>
+          <p>今日の達成率</p>
         </div>
       </div>
     `;
@@ -256,13 +267,13 @@ const App = {
 
   renderCalendar() {
     const workingDate = new Date(this.monthDate.getFullYear(), this.monthDate.getMonth(), 1);
-    this.calendarLabel.textContent = `${workingDate.getFullYear()}-${String(workingDate.getMonth() + 1).padStart(2, '0')}`;
+    this.calendarLabel.textContent = `${workingDate.getFullYear()}年${workingDate.getMonth() + 1}月`;
 
     const firstDay = new Date(workingDate.getFullYear(), workingDate.getMonth(), 1);
     const offset = firstDay.getDay();
     const daysInMonth = new Date(workingDate.getFullYear(), workingDate.getMonth() + 1, 0).getDate();
 
-    const weekdays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const weekdays = ['日', '月', '火', '水', '木', '金', '土'];
     const fragment = document.createDocumentFragment();
 
     weekdays.forEach(label => {
@@ -283,8 +294,7 @@ const App = {
       const dateKey = UTIL.formatDate(date);
       const isToday = UTIL.formatDate(new Date()) === dateKey;
       const isSelected = UTIL.formatDate(this.selectedDate) === dateKey;
-
-      const doneInfo = this.getDayProgress(dateKey);
+      const progress = this.getDayProgress(dateKey);
 
       const cell = document.createElement('div');
       cell.className = 'day';
@@ -300,8 +310,8 @@ const App = {
       const indicator = document.createElement('div');
       indicator.className = 'indicator';
       const fill = document.createElement('span');
-      fill.style.width = `${doneInfo.percent}%`;
-      fill.style.background = doneInfo.color;
+      fill.style.width = `${progress.percent}%`;
+      fill.style.background = progress.color;
       indicator.appendChild(fill);
       cell.appendChild(indicator);
 
@@ -327,8 +337,8 @@ const App = {
     if (!total) return { percent: 0, color: 'rgba(148,163,184,0.4)' };
     const percent = Math.round((done / total) * 100);
     let color = 'rgba(148,163,184,0.4)';
-    if (percent === 100) color = 'rgba(34,197,94,0.8)';
-    else if (percent > 0) color = 'rgba(249,115,22,0.8)';
+    if (percent === 100) color = 'rgba(34,197,94,0.85)';
+    else if (percent > 0) color = 'rgba(249,115,22,0.85)';
     return { percent, color };
   },
 
@@ -336,6 +346,16 @@ const App = {
     const dateKey = UTIL.formatDate(this.selectedDate);
     this.selectedDateLabel.textContent = this.describeSelectedDate();
     this.dashboardEl.innerHTML = '';
+
+    if (!this.data.kids.length) {
+      this.dashboardEl.innerHTML = '<div class="empty-state">ヒーローが登録されていません。設定から追加しましょう。</div>';
+      return;
+    }
+
+    if (!this.data.tasks.length) {
+      this.dashboardEl.innerHTML = '<div class="empty-state">クエストが登録されていません。設定から追加しましょう。</div>';
+      return;
+    }
 
     const template = document.getElementById('kidTemplate');
     const log = this.state.log[dateKey] || {};
@@ -349,7 +369,7 @@ const App = {
       clone.querySelector('.kid-name').textContent = kid.name;
 
       const streak = this.getStreak(kid.id);
-      clone.querySelector('.kid-streak').textContent = streak ? `${streak} day streak` : 'Start a streak today';
+      clone.querySelector('.kid-streak').textContent = streak ? `${streak}日連続でコンプリート中` : '今日からチャレンジ！';
 
       const stars = this.countStars(kid.id);
       clone.querySelector('.kid-stars .value').textContent = stars;
@@ -372,17 +392,17 @@ const App = {
       this.drawRing(canvas, percent, kid.color);
 
       if (!total) {
-        headline.textContent = 'No quests yet.';
-        caption.textContent = 'Add chores in settings to start tracking.';
+        headline.textContent = 'クエストが未登録です';
+        caption.textContent = '設定からお手伝いを追加しましょう';
       } else if (done === total) {
-        headline.textContent = 'Perfect day!';
-        caption.textContent = 'All quests complete. Great job!';
+        headline.textContent = 'ぜんぶクリア！';
+        caption.textContent = '今日は完璧な1日です！';
       } else if (done === 0) {
-        headline.textContent = 'Ready to begin';
-        caption.textContent = 'Pick a quest to kick things off.';
+        headline.textContent = 'これからスタート';
+        caption.textContent = 'まずは1つ選んで挑戦しよう';
       } else {
-        headline.textContent = `Only ${total - done} to go.`;
-        caption.textContent = 'Keep the momentum!' ;
+        headline.textContent = `あと${total - done}件でコンプリート`; 
+        caption.textContent = 'その調子でがんばろう！';
       }
 
       const list = clone.querySelector('.task-list');
@@ -392,7 +412,7 @@ const App = {
         const label = document.createElement('span');
         label.textContent = task.name;
         const btn = document.createElement('button');
-        btn.textContent = kidRecord[task.id] ? 'Undo' : 'Done';
+        btn.textContent = kidRecord[task.id] ? '元に戻す' : '完了';
         btn.setAttribute('data-toggle-task', 'true');
         btn.setAttribute('data-kid', kid.id);
         btn.setAttribute('data-task', task.id);
@@ -411,7 +431,8 @@ const App = {
     const radius = center - 6;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.lineWidth = 12;
-    ctx.strokeStyle = 'rgba(148,163,184,0.2)';
+
+    ctx.strokeStyle = 'rgba(148,163,184,0.25)';
     ctx.beginPath();
     ctx.arc(center, center, radius, 0, Math.PI * 2);
     ctx.stroke();
@@ -425,8 +446,8 @@ const App = {
 
   renderSummary() {
     this.summaryEl.innerHTML = '';
-    const monthKey = UTIL.formatMonth(this.monthDate);
     const monthDays = this.getMonthDates(this.monthDate);
+    const monthLabel = this.formatMonthLabel(this.monthDate);
 
     this.data.kids.forEach(kid => {
       let total = 0;
@@ -444,9 +465,9 @@ const App = {
       card.className = 'summary-card-item';
       card.innerHTML = `
         <h3>${kid.name}</h3>
-        <div class="meta">${monthKey}</div>
-        <div class="meta">${done} of ${total} quests done</div>
-        <div class="meta">${percent}% completion</div>
+        <div class="meta">${monthLabel}</div>
+        <div class="meta">完了 ${done} / ${total}</div>
+        <div class="meta">達成率 ${percent}%</div>
       `;
       this.summaryEl.appendChild(card);
     });
@@ -463,25 +484,31 @@ const App = {
     return dates;
   },
 
+  formatMonthLabel(date) {
+    return `${date.getFullYear()}年${date.getMonth() + 1}月`;
+  },
+
   describeSelectedDate() {
     const todayKey = UTIL.formatDate(new Date());
     const selectedKey = UTIL.formatDate(this.selectedDate);
-    if (todayKey === selectedKey) return 'Today';
-    const options = { year: 'numeric', month: 'long', day: 'numeric' };
-    return this.selectedDate.toLocaleDateString('en-US', options);
+    if (todayKey === selectedKey) return '今日';
+    const days = ['日', '月', '火', '水', '木', '金', '土'];
+    const label = `${this.selectedDate.getFullYear()}年${this.selectedDate.getMonth() + 1}月${this.selectedDate.getDate()}日`;
+    const dayLabel = days[this.selectedDate.getDay()];
+    return `${label}（${dayLabel}）`;
   },
 
   getGreeting() {
     const hour = new Date().getHours();
-    if (hour < 10) return 'Good morning';
-    if (hour < 17) return 'Good afternoon';
-    return 'Good evening';
+    if (hour < 10) return 'おはようございます';
+    if (hour < 17) return 'こんにちは';
+    return 'こんばんは';
   },
 
   getStreak(kidId) {
     let streak = 0;
     const today = new Date();
-    for (let offset = 0; offset < 60; offset += 1) {
+    for (let offset = 0; offset < 90; offset += 1) {
       const date = new Date(today.getFullYear(), today.getMonth(), today.getDate() - offset);
       const dateKey = UTIL.formatDate(date);
       const record = this.state.log[dateKey];
@@ -510,7 +537,8 @@ const App = {
         if (record[kidId][taskId]) stars += 1;
       });
     });
-    const spent = this.state.spent[monthKey] && this.state.spent[monthKey][kidId] ? this.state.spent[monthKey][kidId] : 0;
+    const monthSpent = this.state.spent[monthKey] || {};
+    const spent = monthSpent[kidId] || 0;
     return Math.max(0, stars - spent);
   },
 
@@ -529,65 +557,151 @@ const App = {
 
     const kidsSection = document.createElement('section');
     kidsSection.className = 'settings-group';
-    kidsSection.innerHTML = '<h3>Heroes</h3>';
-    const kidsGrid = document.createElement('div');
-    kidsGrid.className = 'settings-grid';
+    kidsSection.innerHTML = '<h3>ヒーロー</h3>';
+    const kidsContainer = document.createElement('div');
+    kidsContainer.className = 'settings-grid-inner';
+    kidsContainer.setAttribute('data-role', 'kids-container');
     this.data.kids.forEach(kid => {
-      const row = document.createElement('div');
-      row.className = 'settings-row';
-      row.innerHTML = `
-        <label>Name
-          <input type="text" data-type="kid-name" data-id="${kid.id}" value="${kid.name}">
-        </label>
-        <label>Accent color
-          <input type="text" data-type="kid-color" data-id="${kid.id}" value="${kid.color}">
-        </label>
-      `;
-      kidsGrid.appendChild(row);
+      kidsContainer.appendChild(this.createKidRow(kid));
     });
-    kidsSection.appendChild(kidsGrid);
+    kidsSection.appendChild(kidsContainer);
+    const addKid = document.createElement('button');
+    addKid.type = 'button';
+    addKid.className = 'secondary settings-add';
+    addKid.textContent = '＋ ヒーローを追加';
+    addKid.setAttribute('data-action', 'add-kid');
+    kidsSection.appendChild(addKid);
+    kidsSection.appendChild(this.createSettingsNote('ヒーローは同じアイコン先頭文字で表示されます。'));
     wrapper.appendChild(kidsSection);
 
     const tasksSection = document.createElement('section');
     tasksSection.className = 'settings-group';
-    tasksSection.innerHTML = '<h3>Quests</h3>';
-    const tasksGrid = document.createElement('div');
-    tasksGrid.className = 'settings-grid';
+    tasksSection.innerHTML = '<h3>クエスト</h3>';
+    const tasksContainer = document.createElement('div');
+    tasksContainer.className = 'settings-grid-inner';
+    tasksContainer.setAttribute('data-role', 'tasks-container');
     this.data.tasks.forEach(task => {
-      const row = document.createElement('div');
-      row.className = 'settings-row';
-      row.innerHTML = `
-        <label>Task name
-          <input type="text" data-type="task-name" data-id="${task.id}" value="${task.name}">
-        </label>
-      `;
-      tasksGrid.appendChild(row);
+      tasksContainer.appendChild(this.createTaskRow(task));
     });
-    tasksSection.appendChild(tasksGrid);
+    tasksSection.appendChild(tasksContainer);
+    const addTask = document.createElement('button');
+    addTask.type = 'button';
+    addTask.className = 'secondary settings-add';
+    addTask.textContent = '＋ クエストを追加';
+    addTask.setAttribute('data-action', 'add-task');
+    tasksSection.appendChild(addTask);
     wrapper.appendChild(tasksSection);
 
     this.settingsBody.innerHTML = '';
     this.settingsBody.appendChild(wrapper);
   },
 
+  createSettingsNote(text) {
+    const note = document.createElement('p');
+    note.className = 'settings-footer-note';
+    note.textContent = text;
+    return note;
+  },
+
+  createKidRow(kid) {
+    const row = document.createElement('div');
+    row.className = 'settings-row';
+    row.setAttribute('data-role', 'kid-row');
+    row.setAttribute('data-id', kid.id);
+    const safeColor = /^#[0-9a-fA-F]{6}$/.test(kid.color) ? kid.color : '#6366f1';
+    row.innerHTML = `
+      <div class="inline-fields">
+        <input type="text" data-type="kid-name" data-id="${kid.id}" value="${kid.name}" aria-label="なまえ" />
+        <input type="color" data-type="kid-color" data-id="${kid.id}" value="${safeColor}" aria-label="カラー" />
+      </div>
+      <div class="row-actions">
+        <button type="button" class="ghost" data-action="remove-kid">削除</button>
+      </div>
+    `;
+    return row;
+  },
+
+  createTaskRow(task) {
+    const row = document.createElement('div');
+    row.className = 'settings-row';
+    row.setAttribute('data-role', 'task-row');
+    row.setAttribute('data-id', task.id);
+    row.innerHTML = `
+      <div class="inline-fields">
+        <input type="text" data-type="task-name" data-id="${task.id}" value="${task.name}" aria-label="クエスト名" />
+      </div>
+      <div class="row-actions">
+        <button type="button" class="ghost" data-action="remove-task">削除</button>
+      </div>
+    `;
+    return row;
+  },
+
+  handleSettingsClick(event) {
+    const actionEl = this.closestElement(event.target, '[data-action]');
+    if (!actionEl) return;
+    const action = actionEl.getAttribute('data-action');
+    if (action === 'add-kid') {
+      this.addKidRow();
+    } else if (action === 'add-task') {
+      this.addTaskRow();
+    } else if (action === 'remove-kid') {
+      const row = this.closestElement(actionEl, '[data-role="kid-row"]');
+      if (row) row.remove();
+    } else if (action === 'remove-task') {
+      const row = this.closestElement(actionEl, '[data-role="task-row"]');
+      if (row) row.remove();
+    }
+  },
+
+  addKidRow() {
+    const container = this.settingsBody.querySelector('[data-role="kids-container"]');
+    if (!container) return;
+    const id = this.generateId('kid');
+    const newKid = { id, name: `ヒーロー${this.data.kids.length + 1}`, color: '#6366f1' };
+    container.appendChild(this.createKidRow(newKid));
+  },
+
+  addTaskRow() {
+    const container = this.settingsBody.querySelector('[data-role="tasks-container"]');
+    if (!container) return;
+    const id = this.generateId('task');
+    const newTask = { id, name: `クエスト${this.data.tasks.length + 1}` };
+    container.appendChild(this.createTaskRow(newTask));
+  },
+
   saveSettingsFromModal() {
-    const inputs = Array.from(this.settingsBody.querySelectorAll('input'));
-    inputs.forEach(input => {
-      const type = input.getAttribute('data-type');
-      const id = input.getAttribute('data-id');
-      if (!type || !id) return;
-      const value = input.value.trim();
-      if (type === 'kid-name') {
-        const kid = this.data.kids.find(item => item.id === id);
-        if (kid && value) kid.name = value;
-      } else if (type === 'kid-color') {
-        const kid = this.data.kids.find(item => item.id === id);
-        if (kid && /^#[0-9a-fA-F]{6}$/.test(value)) kid.color = value;
-      } else if (type === 'task-name') {
-        const task = this.data.tasks.find(item => item.id === id);
-        if (task && value) task.name = value;
+    const kidRows = Array.from(this.settingsBody.querySelectorAll('[data-role="kid-row"]'));
+    const taskRows = Array.from(this.settingsBody.querySelectorAll('[data-role="task-row"]'));
+
+    const kids = kidRows.map((row, index) => {
+      let id = row.getAttribute('data-id');
+      if (!id) {
+        id = this.generateId('kid');
+        row.setAttribute('data-id', id);
       }
+      const nameInput = row.querySelector('[data-type="kid-name"]');
+      const colorInput = row.querySelector('[data-type="kid-color"]');
+      const name = nameInput && nameInput.value.trim() ? nameInput.value.trim() : `ヒーロー${index + 1}`;
+      let color = colorInput && colorInput.value ? colorInput.value : '#6366f1';
+      if (!/^#[0-9a-fA-F]{6}$/.test(color)) color = '#6366f1';
+      return { id, name, color };
     });
+
+    const tasks = taskRows.map((row, index) => {
+      let id = row.getAttribute('data-id');
+      if (!id) {
+        id = this.generateId('task');
+        row.setAttribute('data-id', id);
+      }
+      const nameInput = row.querySelector('[data-type="task-name"]');
+      const name = nameInput && nameInput.value.trim() ? nameInput.value.trim() : `クエスト${index + 1}`;
+      return { id, name };
+    });
+
+    this.data.kids = kids.length ? kids : UTIL.clone(DEFAULT_DATA.kids);
+    this.data.tasks = tasks.length ? tasks : UTIL.clone(DEFAULT_DATA.tasks);
+
     this.ensureIntegrity();
     this.saveState();
     this.closeSettings();
@@ -610,8 +724,22 @@ const App = {
     anchor.click();
     document.body.removeChild(anchor);
     URL.revokeObjectURL(url);
+  },
+
+  closestElement(element, selector) {
+    let current = element;
+    while (current && current.nodeType === 1) {
+      if (current.matches ? current.matches(selector) : current.msMatchesSelector(selector)) {
+        return current;
+      }
+      current = current.parentElement || current.parentNode;
+    }
+    return null;
+  },
+
+  generateId(prefix) {
+    return `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
   }
 };
 
 document.addEventListener('DOMContentLoaded', () => App.init());
-
