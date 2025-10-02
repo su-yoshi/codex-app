@@ -1,117 +1,112 @@
 ﻿<!DOCTYPE html>
-<html lang="ja" data-theme="light">
+<html lang="ja">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>オーロラおてつだいカレンダー</title>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css" />
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/daisyui@4.12.2/dist/full.min.css" />
-  <link rel="stylesheet" href="styles.css" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Aurora Family Chore Calendar</title>
+  <link rel="stylesheet" href="styles.css">
 </head>
-<body class="aurora-body">
+<body>
   <header class="site-header">
-    <div class="logo-block">
-      <div class="logo-mark">Aurora</div>
-      <div class="logo-copy">
-        <p class="logo-title">おてつだいオーロラ</p>
-        <p class="logo-sub">家族みんなで楽しむヒーローカレンダー</p>
+    <div class="brand">
+      <div class="brand-icon">Aurora</div>
+      <div class="brand-copy">
+        <h1 class="brand-title">Family Chore Calendar</h1>
+        <p class="brand-sub">Plan together, celebrate together.</p>
       </div>
     </div>
-    <nav class="header-actions">
-      <button id="settingsBtn" class="btn btn-sm btn-ghost" aria-label="設定">⚙️ 設定</button>
-      <button id="downloadBtn" class="btn btn-sm btn-ghost" aria-label="データ出力">📦 エクスポート</button>
-      <button id="ttsToggleBtn" class="btn btn-sm btn-circle" aria-label="音声読み上げ"><span id="ttsToggleIcon">🔈</span></button>
+    <nav class="actions">
+      <button id="settingsButton" class="action-btn">Settings</button>
+      <button id="exportButton" class="action-btn">Export</button>
     </nav>
   </header>
 
-  <main class="container">
-    <section class="hero" id="daily-banner">
-      <!-- filled by script -->
-    </section>
+  <main class="layout">
+    <section class="hero" id="hero"></section>
 
-    <section class="grid-layout">
-      <aside class="calendar-card">
-        <h2 class="section-heading">カレンダー</h2>
-        <div id="calendar-container" class="calendar"></div>
-        <div class="legend">
-          <span class="legend-pill legend-pill--complete">ぜんぶ完了</span>
-          <span class="legend-pill legend-pill--partial">途中まで</span>
-          <span class="legend-pill legend-pill--none">まだ</span>
-        </div>
-      </aside>
-
-      <section class="dashboard" aria-live="polite">
-        <header class="dashboard-header">
-          <div>
-            <h2 id="selected-date-display" class="section-heading"></h2>
-            <p class="dashboard-description">アイコンをタップしておてつだいを完了にしよう！</p>
-          </div>
-          <div class="dashboard-tools">
-            <button class="btn btn-xs" data-action="reset-day">今日の記録をリセット</button>
-            <button class="btn btn-xs" data-action="reset-month">今月をリセット</button>
+    <section class="panels">
+      <section class="panel calendar-panel">
+        <header class="panel-header">
+          <h2>Calendar</h2>
+          <div class="calendar-nav">
+            <button id="prevMonth" aria-label="Previous month">◀</button>
+            <div id="calendarLabel"></div>
+            <button id="nextMonth" aria-label="Next month">▶</button>
           </div>
         </header>
-        <div id="kids-dashboard" class="kids-grid"></div>
+        <div id="calendar" class="calendar"></div>
+        <footer class="calendar-legend">
+          <span class="swatch swatch-complete">All done</span>
+          <span class="swatch swatch-partial">In progress</span>
+          <span class="swatch swatch-empty">No tasks</span>
+        </footer>
+      </section>
+
+      <section class="panel dashboard-panel">
+        <header class="panel-header">
+          <h2 id="selectedDateLabel"></h2>
+          <div class="dashboard-actions">
+            <button data-action="reset-day">Reset day</button>
+            <button data-action="reset-month">Reset month</button>
+          </div>
+        </header>
+        <div id="dashboard" class="kids-grid"></div>
       </section>
     </section>
 
-    <section class="summary-card">
-      <header class="summary-header">
-        <h2 class="section-heading">月間ハイライト</h2>
-        <p class="summary-caption">今月のがんばり状況をチェックしよう</p>
+    <section class="panel summary-panel">
+      <header class="panel-header">
+        <h2>Monthly Highlights</h2>
       </header>
-      <div id="monthly-summary" class="summary-grid"></div>
+      <div id="summary" class="summary-grid"></div>
     </section>
   </main>
 
-  <dialog id="settingsModal" class="modal">
-    <form method="dialog" class="modal-box settings-box">
+  <div id="settingsModal" class="modal" role="dialog" aria-modal="true" aria-hidden="true">
+    <div class="modal-backdrop" data-close="settings"></div>
+    <div class="modal-content">
       <header class="modal-header">
-        <h3 class="section-heading">設定とカスタマイズ</h3>
-        <p class="modal-caption">家族のプロフィールやクエストを編集できます</p>
+        <h2>Workspace Settings</h2>
+        <button class="modal-close" data-close="settings" aria-label="Close">×</button>
       </header>
-      <div id="settings-content" class="settings-content"></div>
-      <div class="modal-action">
-        <button value="cancel" class="btn">閉じる</button>
-      </div>
-    </form>
-    <div class="modal-backdrop" aria-hidden="true"></div>
-  </dialog>
+      <div class="modal-body" id="settingsBody"></div>
+      <footer class="modal-footer">
+        <button class="primary" id="settingsSave">Save</button>
+        <button data-close="settings">Cancel</button>
+      </footer>
+    </div>
+  </div>
 
-  <template id="kid-card-template">
-    <div class="kid-card card">
-      <header class="kid-card__header">
-        <div class="kid-profile">
-          <span class="kid-avatar" data-role="avatar"></span>
+  <template id="kidTemplate">
+    <article class="kid-card">
+      <header class="kid-card-header">
+        <div class="kid-id">
+          <span class="kid-avatar"></span>
           <div>
-            <h3 class="kid-name" data-role="name"></h3>
-            <span class="kid-streak" data-role="streak"></span>
+            <h3 class="kid-name"></h3>
+            <p class="kid-streak"></p>
           </div>
         </div>
-        <div class="kid-stats">
-          <span class="kid-stars"><span aria-hidden="true">⭐</span><span data-role="stars"></span></span>
-          <button class="btn btn-xs" data-action="reset-kid">今日だけリセット</button>
+        <div class="kid-stars">
+          <span class="label">Stars</span>
+          <strong class="value"></strong>
         </div>
       </header>
       <div class="kid-progress">
-        <div class="progress-ring">
-          <canvas width="110" height="110"></canvas>
-          <div class="progress-label" data-role="progress">0/0</div>
+        <div class="ring">
+          <canvas width="140" height="140"></canvas>
+          <div class="ring-label"></div>
         </div>
         <div class="progress-copy">
-          <p class="progress-headline" data-role="headline"></p>
-          <div class="progress-bar"><span class="progress-bar__fill" data-role="bar"></span></div>
-          <p class="progress-caption" data-role="caption"></p>
+          <p class="progress-headline"></p>
+          <div class="progress-bar"><span></span></div>
+          <p class="progress-caption"></p>
         </div>
       </div>
-      <ul class="kid-task-list" data-role="tasks"></ul>
-    </div>
+      <ul class="task-list"></ul>
+    </article>
   </template>
 
-  <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
-  <script defer src="app.js"></script>
+  <script src="app.js" defer></script>
 </body>
 </html>
-
