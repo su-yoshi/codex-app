@@ -396,3 +396,98 @@ body.aurora-body {
   .kid-progress { flex-direction: column; align-items: flex-start; }
   .progress-ring { margin: 0 auto; }
 }
+.progress-ring--simple {
+  display: grid;
+  place-items: center;
+  background: rgba(226, 232, 240, 0.8);
+  border-radius: 50%;
+  width: 110px;
+  height: 110px;
+}
+
+.calendar-fallback {
+  display: grid;
+  gap: 12px;
+}
+
+.fallback-calendar__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: 700;
+  color: #1f2937;
+}
+
+.fallback-calendar {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.fallback-calendar th {
+  text-align: center;
+  font-weight: 600;
+  color: var(--text-muted);
+  padding-bottom: 6px;
+}
+
+.fallback-calendar td {
+  position: relative;
+  height: 54px;
+  padding: 6px 4px;
+  border-radius: 14px;
+  text-align: center;
+  font-weight: 700;
+  cursor: pointer;
+  background: rgba(241, 245, 249, 0.7);
+  transition: transform 0.15s ease, box-shadow 0.2s ease;
+}
+
+.fallback-calendar td:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 14px rgba(15, 23, 42, 0.08);
+}
+
+.fallback-day.is-empty {
+  background: transparent;
+  cursor: default;
+}
+
+.fallback-day--complete {
+  background: rgba(134, 239, 172, 0.45);
+}
+
+.fallback-day--partial {
+  background: rgba(254, 215, 170, 0.45);
+}
+
+.fallback-day--selected {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.fallback-day__date {
+  display: block;
+}
+
+.fallback-day__dots {
+  display: flex;
+  justify-content: center;
+  gap: 4px;
+  margin-top: 4px;
+}
+
+.fallback-day__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+}
+
+.fallback-day__progress {
+  position: absolute;
+  bottom: 4px;
+  right: 6px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #1f2937;
+}

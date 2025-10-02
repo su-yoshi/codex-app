@@ -1,11 +1,18 @@
-﻿const STORAGE = {
+﻿
+const STORAGE = {
   settings: 'aurora-settings-v2',
   daily: 'aurora-daily-',
   spent: 'aurora-spent-'
 };
 
 const clone = (value) => {
-  if (typeof structuredClone === 'function') return structuredClone(value);
+  try {
+    if (typeof structuredClone === 'function') {
+      return structuredClone(value);
+    }
+  } catch (_) {
+    // ignore
+  }
   return JSON.parse(JSON.stringify(value));
 };
 
@@ -35,11 +42,13 @@ const App = {
   calendar: null,
   charts: {},
   calendarStatus: {},
-  ttsVoices: [],
+  features: {},
+  fallbackCalendarActive: false,
 
   init() {
     this.cacheElements();
     this.loadSettings();
+    this.detectFeatures();
     this.bindEvents();
     this.initCalendar();
     this.renderAll();
@@ -57,58 +66,77 @@ const App = {
       ttsIcon: document.getElementById('ttsToggleIcon'),
       settingsModal: document.getElementById('settingsModal'),
       settingsContent: document.getElementById('settings-content'),
-      kidTemplate: document.getElementById('kid-card-template')
+      kidTemplate: document.getElementById('kid-card-template'),
+      calendarContainer: document.getElementById('calendar-container'),
+      dashboardTools: document.querySelector('.dashboard-tools')
     };
   },
 
+  detectFeatures() {
+    this.features = {
+      calendar: typeof flatpickr === 'function',
+      chart: typeof Chart === 'function',
+      confetti: typeof confetti === 'function',
+      speech: typeof window !== 'undefined' && 'speechSynthesis' in window
+    };
+  },
   bindEvents() {
-    this.el.settingsBtn.addEventListener('click', () => {
-      this.renderSettings();
-      this.el.settingsModal.showModal();
-    });
+    if (this.el.settingsBtn) {
+      this.el.settingsBtn.addEventListener('click', () => {
+        this.renderSettings();
+        this.el.settingsModal?.showModal();
+      });
+    }
 
-    this.el.settingsModal.addEventListener('click', (event) => {
-      const { action, id } = event.target.dataset;
-      if (!action) return;
-      this.handleSettingsAction(action, id);
-    });
+    if (this.el.settingsModal) {
+      this.el.settingsModal.addEventListener('click', (event) => {
+        const { action, id } = event.target.dataset;
+        if (!action) return;
+        this.handleSettingsAction(action, id);
+      });
 
-    this.el.settingsModal.addEventListener('input', (event) => {
-      const target = event.target;
-      const { category, id } = target.dataset;
-      if (!category || !id) return;
-      if (category === 'kid') {
-        const kid = this.settings.kids.find(k => k.id === id);
-        if (kid) kid[target.name] = target.value;
-      } else if (category === 'task') {
-        const task = this.settings.tasks.find(t => t.id === id);
-        if (task) task[target.name] = target.value;
-      }
-      this.saveSettings();
-      this.renderAll();
-    });
+      this.el.settingsModal.addEventListener('input', (event) => {
+        const target = event.target;
+        const { category, id } = target.dataset || {};
+        if (!category || !id) return;
+        if (category === 'kid') {
+          const kid = this.settings.kids.find(k => k.id === id);
+          if (kid) {
+            kid[target.name] = target.value;
+          }
+        } else if (category === 'task') {
+          const task = this.settings.tasks.find(t => t.id === id);
+          if (task) {
+            task[target.name] = target.value;
+          }
+        }
+        this.ensureSettingsIntegrity();
+        this.saveSettings();
+        this.renderAll();
+      });
 
-    this.el.settingsModal.addEventListener('change', (event) => {
-      if (event.target.name === 'sound-enabled') {
-        this.settings.sound = event.target.checked;
-      } else if (event.target.name === 'tts-enabled') {
-        this.settings.tts = event.target.checked;
-      } else if (event.target.name === 'tts-rate') {
-        this.settings.ttsRate = Number(event.target.value) || 1;
-      }
-      this.saveSettings();
-      this.updateTtsButton();
-    });
+      this.el.settingsModal.addEventListener('change', (event) => {
+        if (event.target.name === 'sound-enabled') {
+          this.settings.sound = event.target.checked;
+        } else if (event.target.name === 'tts-enabled') {
+          this.settings.tts = event.target.checked;
+        } else if (event.target.name === 'tts-rate') {
+          this.settings.ttsRate = Number(event.target.value) || 1;
+        }
+        this.saveSettings();
+        this.updateTtsButton();
+      });
+    }
 
-    this.el.downloadBtn.addEventListener('click', () => this.exportMonthData());
+    this.el.downloadBtn?.addEventListener('click', () => this.exportMonthData());
 
-    this.el.ttsBtn.addEventListener('click', () => {
+    this.el.ttsBtn?.addEventListener('click', () => {
       this.settings.tts = !this.settings.tts;
       this.saveSettings();
       this.updateTtsButton();
     });
 
-    document.querySelector('.dashboard-tools')?.addEventListener('click', (event) => {
+    this.el.dashboardTools?.addEventListener('click', (event) => {
       const btn = event.target.closest('button[data-action]');
       if (!btn) return;
       if (btn.dataset.action === 'reset-day') {
@@ -118,20 +146,45 @@ const App = {
       }
     });
 
-    this.el.kidsDashboard.addEventListener('click', (event) => {
-      const resetBtn = event.target.closest('[data-action="reset-kid"]');
-      if (resetBtn) {
-        this.resetKidTasks(resetBtn.dataset.kidId);
-        return;
-      }
-      const toggle = event.target.closest('.task-toggle-btn');
-      if (!toggle) return;
-      const { kidId, taskId } = toggle.dataset;
-      if (kidId && taskId) this.toggleTask(kidId, taskId);
-    });
+    if (this.el.kidsDashboard) {
+      this.el.kidsDashboard.addEventListener('click', (event) => {
+        const resetBtn = event.target.closest('[data-action="reset-kid"]');
+        if (resetBtn) {
+          this.resetKidTasks(resetBtn.dataset.kidId);
+          return;
+        }
+        const toggle = event.target.closest('.task-toggle-btn');
+        if (!toggle) return;
+        const { kidId, taskId } = toggle.dataset;
+        if (kidId && taskId) {
+          this.toggleTask(kidId, taskId);
+        }
+      });
+    }
   },
 
   initCalendar() {
+    if (!this.features.calendar || !this.el.calendarContainer) {
+      this.fallbackCalendarActive = true;
+      this.el.calendarContainer?.classList.add('calendar-fallback');
+      if (this.el.calendarContainer && !this.el.calendarContainer.dataset.fallbackBound) {
+        this.el.calendarContainer.addEventListener('click', (event) => {
+          const nav = event.target.closest('[data-fallback-nav]');
+          if (nav) {
+            const offset = nav.dataset.fallbackNav === 'prev' ? -1 : 1;
+            this.shiftMonth(offset);
+            return;
+          }
+          const cell = event.target.closest('[data-date]');
+          if (!cell || !cell.dataset.date) return;
+          this.selectedDate = this.parseDateKey(cell.dataset.date);
+          this.renderAll();
+        });
+        this.el.calendarContainer.dataset.fallbackBound = 'true';
+      }
+      return;
+    }
+
     this.calendar = flatpickr('#calendar-container', {
       inline: true,
       defaultDate: this.selectedDate,
@@ -186,18 +239,40 @@ const App = {
 
   loadSettings() {
     const saved = this.loadData(STORAGE.settings, null);
-    if (saved) {
+    if (saved && typeof saved === 'object') {
       this.settings = Object.assign({}, DEFAULTS, saved);
-      this.settings.kids = Array.isArray(saved.kids) ? saved.kids : clone(DEFAULTS.kids);
-      this.settings.tasks = Array.isArray(saved.tasks) ? saved.tasks : clone(DEFAULTS.tasks);
-      this.settings.rewards = Array.isArray(saved.rewards) ? saved.rewards : clone(DEFAULTS.rewards);
     } else {
       this.settings = clone(DEFAULTS);
     }
+    this.ensureSettingsIntegrity();
+    this.saveSettings();
   },
 
-  saveSettings() {
-    this.saveData(STORAGE.settings, this.settings);
+  ensureSettingsIntegrity() {
+    if (!Array.isArray(this.settings.kids) || !this.settings.kids.length) {
+      this.settings.kids = clone(DEFAULTS.kids);
+    }
+    if (!Array.isArray(this.settings.tasks) || !this.settings.tasks.length) {
+      this.settings.tasks = clone(DEFAULTS.tasks);
+    }
+    if (!Array.isArray(this.settings.rewards) || !this.settings.rewards.length) {
+      this.settings.rewards = clone(DEFAULTS.rewards);
+    }
+
+    this.settings.kids = this.settings.kids.map((kid, index) => ({
+      id: kid.id || `kid-${index}-${Date.now()}`,
+      name: kid.name || `ヒーロー${index + 1}`,
+      color: kid.color || DEFAULTS.kids[index % DEFAULTS.kids.length].color,
+      emoji: kid.emoji !== undefined ? kid.emoji : '🧒'
+    }));
+
+    this.settings.tasks = this.settings.tasks.map((task, index) => ({
+      id: task.id || `task-${index}-${Date.now()}`,
+      name: task.name || `クエスト${index + 1}`,
+      icon: task.icon || '⭐'
+    }));
+
+    this.settings.ttsRate = Number.isFinite(this.settings.ttsRate) ? this.settings.ttsRate : 1;
   },
 
   loadData(key, fallback) {
@@ -212,7 +287,15 @@ const App = {
   },
 
   saveData(key, value) {
-    localStorage.setItem(key, JSON.stringify(value));
+    try {
+      localStorage.setItem(key, JSON.stringify(value));
+    } catch (error) {
+      console.warn('Failed to save storage', key, error);
+    }
+  },
+
+  saveSettings() {
+    this.saveData(STORAGE.settings, this.settings);
   },
 
   formatDateKey(date) {
@@ -223,16 +306,17 @@ const App = {
     ].join('-');
   },
 
+  parseDateKey(key) {
+    const [year, month, day] = key.split('-').map(Number);
+    return new Date(year, month - 1, day);
+  },
+
   formatMonthKey(date) {
     return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
   },
 
   getDailyData(date) {
-    return this.loadData(`${STORAGE.daily}${this.formatDateKey(date)}`, {});
-  },
-
-  saveDailyData(date, data) {
-    this.saveData(`${STORAGE.daily}${this.formatDateKey(date)}`, data);
+    return this.loadData(`${STORAGE.daily}${this.formatDateKey(date)}`, {}) || {};
   },
 
   toggleTask(kidId, taskId) {
@@ -252,14 +336,13 @@ const App = {
 
     this.renderAll();
   },
-
   resetKidTasks(kidId) {
     if (!kidId) return;
     const key = `${STORAGE.daily}${this.formatDateKey(this.selectedDate)}`;
     const daily = this.loadData(key, {});
     if (!daily[kidId]) return;
     const date = this.selectedDate;
-    if (!confirm(`${date.getMonth() + 1}月${date.getDate()}日の${this.getKidName(kidId)}の記録を消しますか？`)) return;
+    if (!confirm(`${date.getMonth() + 1}月${date.getDate()}日の${this.getKidName(kidId)}のおてつだいをリセットしますか？`)) return;
     delete daily[kidId];
     this.saveData(key, daily);
     this.renderAll();
@@ -267,14 +350,14 @@ const App = {
 
   resetSelectedDay() {
     const date = this.selectedDate;
-    if (!confirm(`${date.getMonth() + 1}月${date.getDate()}日の記録をすべて消しますか？`)) return;
+    if (!confirm(`${date.getMonth() + 1}月${date.getDate()}日の記録をすべてリセットしますか？`)) return;
     localStorage.removeItem(`${STORAGE.daily}${this.formatDateKey(date)}`);
     this.renderAll();
   },
 
   resetCurrentMonth() {
     const date = this.selectedDate;
-    if (!confirm(`${date.getFullYear()}年${date.getMonth() + 1}月の記録をすべて消しますか？`)) return;
+    if (!confirm(`${date.getFullYear()}年${date.getMonth() + 1}月の記録をすべてリセットしますか？`)) return;
     const monthKey = this.formatMonthKey(date);
     Object.keys(localStorage)
       .filter(key => key.startsWith(STORAGE.daily) && key.includes(monthKey))
@@ -289,7 +372,7 @@ const App = {
 
   getDailyCompletion(kidId, date) {
     const tasks = this.settings.tasks;
-    if (tasks.length === 0) return { done: 0, total: 0 };
+    if (!tasks.length) return { done: 0, total: 0 };
     const daily = this.getDailyData(date);
     const kidTasks = daily[kidId] || {};
     const done = tasks.filter(task => kidTasks[task.id] === 'done').length;
@@ -303,7 +386,11 @@ const App = {
       const date = new Date(today.getFullYear(), today.getMonth(), today.getDate() - i);
       const { done, total } = this.getDailyCompletion(kidId, date);
       if (total === 0) continue;
-      if (done === total) streak += 1; else break;
+      if (done === total) {
+        streak += 1;
+      } else {
+        break;
+      }
     }
     return streak;
   },
@@ -312,7 +399,7 @@ const App = {
     const monthKey = this.formatMonthKey(this.selectedDate);
     let count = 0;
     const tasks = this.settings.tasks;
-    if (tasks.length === 0) return 0;
+    if (!tasks.length) return 0;
     Object.keys(localStorage).forEach((key) => {
       if (!key.startsWith(STORAGE.daily)) return;
       const datePart = key.replace(STORAGE.daily, '');
@@ -324,7 +411,7 @@ const App = {
       });
     });
     const spent = this.loadData(`${STORAGE.spent}${monthKey}`, {});
-    return Math.max(0, count - (spent[kidId] || 0));
+    return Math.max(0, count - (spent?.[kidId] || 0));
   },
 
   updateCalendarDecorations() {
@@ -332,7 +419,11 @@ const App = {
     const kids = this.settings.kids;
     if (!tasks.length || !kids.length) {
       this.calendarStatus = {};
-      this.calendar?.redraw();
+      if (this.features.calendar && this.calendar) {
+        this.calendar.redraw();
+      } else if (this.fallbackCalendarActive) {
+        this.renderFallbackCalendar();
+      }
       return;
     }
 
@@ -352,7 +443,7 @@ const App = {
         kidCount += 1;
         const kidTasks = entry[kid.id] || {};
         const done = tasks.filter(task => kidTasks[task.id] === 'done').length;
-        const ratio = tasks.length > 0 ? done / tasks.length : 0;
+        const ratio = tasks.length ? done / tasks.length : 0;
         percentSum += ratio;
         tooltipParts.push(`${kid.name}:${done}/${tasks.length}`);
 
@@ -381,10 +472,14 @@ const App = {
     });
 
     this.calendarStatus = statusMap;
-    this.calendar?.redraw();
+    if (this.features.calendar && this.calendar) {
+      this.calendar.redraw();
+    } else if (this.fallbackCalendarActive) {
+      this.renderFallbackCalendar();
+    }
   },
-
   renderHero() {
+    if (!this.el.hero) return;
     const date = this.selectedDate;
     const kids = this.settings.kids;
     const tasks = this.settings.tasks;
@@ -429,11 +524,16 @@ const App = {
   },
 
   renderDashboard() {
+    if (!this.el.kidsDashboard) return;
+
     const date = this.selectedDate;
-    const dateLabel = this.formatDateKey(date) === this.formatDateKey(new Date())
+    const isToday = this.formatDateKey(date) === this.formatDateKey(new Date());
+    const dateLabel = isToday
       ? '今日のおてつだい'
       : `${date.getMonth() + 1}月${date.getDate()}日のおてつだい`;
-    this.el.dateHeading.textContent = dateLabel;
+    if (this.el.dateHeading) {
+      this.el.dateHeading.textContent = dateLabel;
+    }
 
     const kids = this.settings.kids;
     const tasks = this.settings.tasks;
@@ -443,7 +543,7 @@ const App = {
       return;
     }
     if (!tasks.length) {
-      this.el.kidsDashboard.innerHTML = '<div class="empty-state">クエストがまだありません。設定から追加しよう！</div>';
+      this.el.kidsDashboard.innerHTML = '<div class="empty-state">クエストを追加するとここに表示されます。</div>';
       return;
     }
 
@@ -469,27 +569,33 @@ const App = {
       fragment.querySelector('[data-role="headline"]').textContent = headline.title;
       fragment.querySelector('[data-role="caption"]').textContent = headline.caption;
 
-      const canvas = fragment.querySelector('canvas');
-      const ctx = canvas.getContext('2d');
-      if (this.charts[kid.id]) this.charts[kid.id].destroy();
-      this.charts[kid.id] = new Chart(ctx, {
-        type: 'doughnut',
-        data: {
-          labels: ['Done', 'Todo'],
-          datasets: [{
-            data: [done, Math.max(0, total - done)],
-            backgroundColor: [kid.color || '#22d3ee', '#e2e8f0'],
-            borderWidth: 0
-          }]
-        },
-        options: {
-          cutout: '70%',
-          plugins: { legend: { display: false }, tooltip: { enabled: false } },
-          animation: { duration: 220 },
-          responsive: false,
-          maintainAspectRatio: false
-        }
-      });
+      const ring = fragment.querySelector('.progress-ring');
+      const canvas = ring.querySelector('canvas');
+      if (this.features.chart) {
+        const ctx = canvas.getContext('2d');
+        if (this.charts[kid.id]) this.charts[kid.id].destroy();
+        this.charts[kid.id] = new Chart(ctx, {
+          type: 'doughnut',
+          data: {
+            labels: ['Done', 'Todo'],
+            datasets: [{
+              data: [done, Math.max(0, total - done)],
+              backgroundColor: [kid.color || '#22d3ee', '#e2e8f0'],
+              borderWidth: 0
+            }]
+          },
+          options: {
+            cutout: '70%',
+            plugins: { legend: { display: false }, tooltip: { enabled: false } },
+            animation: { duration: 220 },
+            responsive: false,
+            maintainAspectRatio: false
+          }
+        });
+      } else {
+        canvas.remove();
+        ring.classList.add('progress-ring--simple');
+      }
 
       const list = fragment.querySelector('[data-role="tasks"]');
       const kidDaily = daily[kid.id] || {};
@@ -514,6 +620,7 @@ const App = {
   },
 
   renderMonthlySummary() {
+    if (!this.el.monthlySummary) return;
     const kids = this.settings.kids;
     const tasks = this.settings.tasks;
     if (!kids.length || !tasks.length) {
@@ -560,8 +667,8 @@ const App = {
     }
     return result;
   },
-
   renderSettings() {
+    if (!this.el.settingsContent) return;
     const kidsSection = this.settings.kids.map((kid) => `
       <div class="settings-row">
         <div class="settings-row__fields">
@@ -641,7 +748,7 @@ const App = {
     if (action === 'add-kid') {
       this.settings.kids.push({
         id: `kid-${Date.now()}`,
-        name: 'ななし',
+        name: 'なまえ',
         color: '#f472b6',
         emoji: '🧒'
       });
@@ -657,6 +764,7 @@ const App = {
       this.settings.tasks = this.settings.tasks.filter(t => t.id !== id);
     }
 
+    this.ensureSettingsIntegrity();
     this.saveSettings();
     this.renderSettings();
     this.renderAll();
@@ -702,7 +810,7 @@ const App = {
   },
 
   updateTtsButton() {
-    if (!this.el.ttsIcon) return;
+    if (!this.el.ttsIcon || !this.el.ttsBtn) return;
     this.el.ttsIcon.textContent = this.settings.tts ? '🔊' : '🔈';
     this.el.ttsBtn.setAttribute('aria-pressed', this.settings.tts ? 'true' : 'false');
   },
@@ -724,7 +832,7 @@ const App = {
   },
 
   celebrate(kid, task) {
-    if (typeof confetti === 'function') {
+    if (this.features.confetti) {
       confetti({
         particleCount: 70,
         spread: 80,
@@ -732,7 +840,7 @@ const App = {
         colors: [kid?.color || '#34d399', '#facc15', '#60a5fa']
       });
     }
-    if (this.settings.tts && 'speechSynthesis' in window) {
+    if (this.settings.tts && this.features.speech) {
       const utter = new SpeechSynthesisUtterance(`${kid?.name || 'ヒーロー'}、${task?.name || 'おてつだい'}をクリア！`);
       utter.lang = 'ja-JP';
       utter.rate = Math.min(1.6, Math.max(0.5, this.settings.ttsRate || 1));
@@ -768,13 +876,96 @@ const App = {
     URL.revokeObjectURL(url);
   },
 
+  shiftMonth(offset) {
+    const current = this.selectedDate;
+    this.selectedDate = new Date(current.getFullYear(), current.getMonth() + offset, 1);
+    this.renderAll();
+  },
+
+  renderFallbackCalendar() {
+    if (!this.el.calendarContainer) return;
+    const container = this.el.calendarContainer;
+    const date = this.selectedDate;
+    const year = date.getFullYear();
+    const month = date.getMonth();
+    const first = new Date(year, month, 1);
+    const firstDay = first.getDay();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const weekdayLabels = ['日', '月', '火', '水', '木', '金', '土'];
+
+    let day = 1;
+    const rows = [];
+    while (day <= daysInMonth) {
+      const cells = [];
+      for (let col = 0; col < 7; col += 1) {
+        if (rows.length === 0 && col < firstDay) {
+          cells.push('<td class="fallback-day is-empty"></td>');
+          continue;
+        }
+        if (day > daysInMonth) {
+          cells.push('<td class="fallback-day is-empty"></td>');
+          continue;
+        }
+        const cellDate = new Date(year, month, day);
+        const key = this.formatDateKey(cellDate);
+        const status = this.calendarStatus[key];
+        let classes = 'fallback-day';
+        if (status) {
+          classes += ` fallback-day--${status.state}`;
+        }
+        if (this.formatDateKey(this.selectedDate) === key) {
+          classes += ' fallback-day--selected';
+        }
+        const dotsMarkup = status && status.dots.length
+          ? `<div class="fallback-day__dots">${status.dots.map(dot => `<span class="fallback-day__dot" style="background-color:${dot.color};opacity:${dot.opacity}"></span>`).join('')}</div>`
+          : '';
+        const progressMarkup = status && Number.isFinite(status.avgCompletion)
+          ? `<span class="fallback-day__progress">${status.avgCompletion}%</span>`
+          : '';
+        const tooltip = status?.tooltip ? status.tooltip : '';
+        cells.push(`
+          <td class="${classes}" data-date="${key}" title="${tooltip}">
+            <span class="fallback-day__date">${day}</span>
+            ${dotsMarkup}
+            ${progressMarkup}
+          </td>
+        `);
+        day += 1;
+      }
+      rows.push(`<tr>${cells.join('')}</tr>`);
+    }
+
+    container.innerHTML = `
+      <div class="fallback-calendar__header">
+        <button type="button" class="btn btn-xs btn-ghost" data-fallback-nav="prev" aria-label="前の月へ">←</button>
+        <strong>${year}年${month + 1}月</strong>
+        <button type="button" class="btn btn-xs btn-ghost" data-fallback-nav="next" aria-label="次の月へ">→</button>
+      </div>
+      <table class="fallback-calendar" aria-label="おてつだいカレンダー">
+        <thead>
+          <tr>${weekdayLabels.map(label => `<th scope="col">${label}</th>`).join('')}</tr>
+        </thead>
+        <tbody>
+          ${rows.join('')}
+        </tbody>
+      </table>
+    `;
+  },
+
   renderAll() {
+    this.ensureSettingsIntegrity();
+    this.saveSettings();
     this.updateCalendarDecorations();
     this.renderHero();
     this.renderDashboard();
     this.renderMonthlySummary();
     this.updateTtsButton();
-    if (this.calendar) this.calendar.setDate(this.selectedDate, false);
+
+    if (this.features.calendar && this.calendar) {
+      this.calendar.setDate(this.selectedDate, false);
+    } else if (this.fallbackCalendarActive) {
+      this.renderFallbackCalendar();
+    }
   }
 };
 
