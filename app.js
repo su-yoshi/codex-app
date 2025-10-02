@@ -158,9 +158,9 @@ const App = {
 
       modal.addEventListener('input', (event) => {
         const target = event.target;
-        const targetDataset = (target && target.dataset) ? target.dataset : {};
-        const category = targetDataset.category || ((target && typeof target.getAttribute === 'function') ? target.getAttribute('data-category') : null);
-        const id = targetDataset.id || ((target && typeof target.getAttribute === 'function') ? target.getAttribute('data-id') : null);
+        const dataset = (target && target.dataset) ? target.dataset : {};
+        const category = dataset.category || ((target && typeof target.getAttribute === 'function') ? target.getAttribute('data-category') : null);
+        const id = dataset.id || ((target && typeof target.getAttribute === 'function') ? target.getAttribute('data-id') : null);
         if (!category || !id) return;
         if (category === 'kid') {
           const kid = this.settings.kids.find((item) => item.id === id);
@@ -244,7 +244,6 @@ const App = {
       });
     }
   },
-
   initCalendar() {
     if (!this.features.calendar || !this.el.calendarContainer) {
       this.fallbackCalendarActive = true;
@@ -1060,6 +1059,7 @@ const App = {
 };
 
 document.addEventListener('DOMContentLoaded', () => App.init());
+
 
 
 
