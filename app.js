@@ -1,4 +1,4 @@
-﻿
+
 const STORAGE = {
   settings: 'aurora-settings-v3',
   daily: 'aurora-daily-',
