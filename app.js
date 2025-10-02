@@ -1,6 +1,6 @@
 ﻿
 const STORAGE = {
-  settings: 'aurora-settings-v2',
+  settings: 'aurora-settings-v3',
   daily: 'aurora-daily-',
   spent: 'aurora-spent-'
 };
@@ -1059,6 +1059,8 @@ const App = {
 };
 
 document.addEventListener('DOMContentLoaded', () => App.init());
+
+
 
 
 
