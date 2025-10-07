@@ -1,114 +1,2643 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>オーロラお手伝いカレンダー</title>
-  <link rel="stylesheet" href="styles.css" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>お手伝いウィークリープランナー</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;600;700&family=Poppins:wght@500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: linear-gradient(140deg, #eef4ff, #fcf5ff 45%, #fff6ea);
+      --panel: rgba(255, 255, 255, 0.92);
+      --panel-strong: #ffffff;
+      --panel-soft: rgba(255, 255, 255, 0.7);
+      --border: rgba(86, 111, 196, 0.18);
+      --border-strong: rgba(68, 90, 176, 0.28);
+      --text: #1f2640;
+      --muted: rgba(31, 38, 64, 0.65);
+      --accent: #5b6be5;
+      --accent-strong: #3841c4;
+      --success: #22c55e;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --radius-xl: 24px;
+      --radius-lg: 18px;
+      --shadow-soft: 0 18px 40px rgba(31, 41, 79, 0.15);
+      --shadow-card: 0 14px 30px rgba(42, 55, 99, 0.12);
+      --transition: all 0.2s ease;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      height: 100%;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: 'Noto Sans JP', 'Poppins', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .app {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 0 24px 72px;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+
+    .site-header {
+      padding: 40px 0 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 32px;
+      flex-wrap: wrap;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      min-width: 260px;
+    }
+
+    .brand-icon {
+      width: 64px;
+      height: 64px;
+      border-radius: 24px;
+      background: radial-gradient(circle at top, rgba(255, 255, 255, 0.92), rgba(91, 107, 229, 0.35));
+      display: grid;
+      place-items: center;
+      font-size: 28px;
+      box-shadow: var(--shadow-card);
+    }
+
+    .brand-title {
+      margin: 0;
+      font-size: clamp(1.9rem, 4vw, 2.5rem);
+      font-weight: 600;
+      letter-spacing: 0.02em;
+    }
+
+    .brand-copy {
+      margin: 6px 0 0;
+      color: var(--muted);
+      font-size: 0.95rem;
+      line-height: 1.5;
+    }
+
+    .nav-actions {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .button {
+      appearance: none;
+      border: none;
+      border-radius: 999px;
+      padding: 10px 20px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: var(--transition);
+    }
+
+    .button.primary {
+      background: var(--accent);
+      color: #fff;
+      box-shadow: 0 12px 30px rgba(91, 107, 229, 0.25);
+    }
+
+    .button.primary:hover {
+      background: var(--accent-strong);
+      transform: translateY(-1px);
+    }
+
+    .button.secondary {
+      background: rgba(91, 107, 229, 0.18);
+      color: var(--accent-strong);
+      border: 1px solid rgba(91, 107, 229, 0.28);
+    }
+
+    .button.secondary:hover {
+      background: rgba(91, 107, 229, 0.28);
+    }
+
+    .button.ghost {
+      background: rgba(255, 255, 255, 0.6);
+      color: var(--muted);
+      border: 1px solid transparent;
+    }
+
+    .button.ghost:hover {
+      border-color: rgba(91, 107, 229, 0.2);
+      color: var(--text);
+      background: rgba(255, 255, 255, 0.85);
+    }
+
+    .button.danger {
+      background: var(--danger);
+      color: #fff;
+      box-shadow: 0 12px 28px rgba(239, 68, 68, 0.2);
+    }
+
+    .button.danger:hover {
+      background: #dc2626;
+    }
+
+    .button.small {
+      padding: 6px 14px;
+      font-size: 0.82rem;
+      gap: 6px;
+    }
+
+    .button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+    .layout {
+      display: grid;
+      gap: 32px;
+      flex: 1;
+    }
+
+    .control-panel {
+      background: var(--panel);
+      border-radius: var(--radius-xl);
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow-card);
+      padding: 26px 28px;
+      display: grid;
+      gap: 24px;
+      position: relative;
+      transition: var(--transition);
+    }
+
+    .control-panel[data-active="false"] {
+      opacity: 0.75;
+    }
+
+    .control-panel__header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .control-panel__eyebrow {
+      margin: 0;
+      font-size: 0.75rem;
+      letter-spacing: 0.34em;
+      font-weight: 600;
+      color: var(--muted);
+    }
+
+    .control-panel__title {
+      margin: 6px 0 0;
+      font-size: 1.3rem;
+      font-weight: 600;
+    }
+
+    .control-panel__text {
+      margin: 8px 0 0;
+      color: var(--muted);
+      font-size: 0.92rem;
+      line-height: 1.55;
+    }
+
+    .control-panel__toggle {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .control-panel__quick-hint {
+      margin: 0;
+      font-size: 0.82rem;
+      color: rgba(31, 38, 64, 0.55);
+    }
+
+    .control-panel__form {
+      display: grid;
+      gap: 22px;
+    }
+
+    .control-form-grid {
+      display: grid;
+      gap: 16px;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      align-items: end;
+    }
+
+    .control-field {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .control-field label {
+      font-size: 0.82rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      color: rgba(31, 38, 64, 0.6);
+    }
+
+    .control-select {
+      appearance: none;
+      border-radius: 12px;
+      border: 1px solid rgba(91, 107, 229, 0.28);
+      background: rgba(255, 255, 255, 0.96);
+      padding: 10px 12px;
+      font-size: 0.9rem;
+      transition: var(--transition);
+    }
+
+    .control-select:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 4px rgba(91, 107, 229, 0.18);
+    }
+
+    .control-panel__actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .control-panel__status {
+      background: rgba(91, 107, 229, 0.08);
+      border-radius: 14px;
+      border: 1px solid rgba(91, 107, 229, 0.18);
+      padding: 12px 14px;
+      font-size: 0.88rem;
+      color: var(--text);
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .control-panel__status strong {
+      font-weight: 600;
+    }
+
+    .control-panel__manager {
+      display: grid;
+      gap: 18px;
+    }
+
+    .manager-block {
+      background: var(--panel-soft);
+      border-radius: var(--radius-lg);
+      border: 1px solid rgba(91, 107, 229, 0.12);
+      padding: 16px 18px;
+      display: grid;
+      gap: 14px;
+    }
+
+    .manager-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .manager-header h3 {
+      margin: 0;
+      font-size: 1rem;
+    }
+
+    .manager-list {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: grid;
+      gap: 12px;
+    }
+
+    .manager-item {
+      display: grid;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .manager-item.kid {
+      grid-template-columns: minmax(0, 1fr) 64px auto;
+    }
+
+    .manager-item.task {
+      grid-template-columns: 80px minmax(0, 1fr) auto;
+    }
+
+    .manager-item input[type="text"] {
+      border-radius: 12px;
+      border: 1px solid rgba(91, 107, 229, 0.28);
+      padding: 10px 12px;
+      font-size: 0.9rem;
+      background: rgba(255, 255, 255, 0.95);
+      transition: var(--transition);
+    }
+
+    .manager-item input[type="text"]:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 4px rgba(91, 107, 229, 0.16);
+    }
+
+    .manager-item input[type="color"] {
+      width: 100%;
+      height: 40px;
+      border: none;
+      padding: 0;
+      background: transparent;
+      cursor: pointer;
+    }
+
+    .manager-item button {
+      justify-content: center;
+      min-width: 90px;
+    }
+
+    .manager-empty {
+      font-size: 0.9rem;
+      color: rgba(31, 38, 64, 0.5);
+      padding: 12px;
+      border-radius: 14px;
+      border: 1px dashed rgba(91, 107, 229, 0.3);
+      background: rgba(255, 255, 255, 0.6);
+      text-align: center;
+    }
+
+    .manager-list.is-disabled {
+      opacity: 0.6;
+      pointer-events: none;
+    }
+
+    .edit-banner {
+      display: none;
+      margin: 0 0 16px;
+      padding: 14px 18px;
+      border-radius: var(--radius-lg);
+      background: rgba(34, 197, 94, 0.16);
+      border: 1px solid rgba(34, 197, 94, 0.3);
+      color: #166534;
+      font-size: 0.95rem;
+      font-weight: 500;
+      box-shadow: 0 10px 24px rgba(22, 101, 52, 0.12);
+    }
+
+    body.is-edit .edit-banner {
+      display: block;
+    }
+    .summary-grid {
+      display: grid;
+      gap: 20px;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    }
+
+    .summary-card {
+      background: var(--panel);
+      border-radius: var(--radius-xl);
+      border: 1px solid var(--border);
+      padding: 24px;
+      box-shadow: var(--shadow-card);
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .summary-card--hero {
+      background: linear-gradient(120deg, rgba(91, 107, 229, 0.18), rgba(255, 255, 255, 0.9));
+      border: 1px solid rgba(91, 107, 229, 0.28);
+      box-shadow: 0 24px 45px rgba(91, 107, 229, 0.28);
+      color: var(--text);
+    }
+
+    .summary-card--hero .summary-title {
+      font-size: clamp(1.5rem, 4vw, 2.15rem);
+      margin: 6px 0 0;
+    }
+
+    .summary-eyebrow {
+      margin: 0;
+      font-size: 0.78rem;
+      letter-spacing: 0.32em;
+      font-weight: 600;
+      color: var(--muted);
+    }
+
+    .summary-title {
+      margin: 0;
+      font-weight: 600;
+    }
+
+    .summary-text {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.6;
+      font-size: 0.95rem;
+    }
+
+    .summary-card--stats header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 12px;
+    }
+
+    .summary-metric {
+      font-size: 2.1rem;
+      font-weight: 600;
+    }
+
+    .summary-metric span {
+      font-size: 1rem;
+      color: var(--muted);
+      font-weight: 500;
+      margin-left: 6px;
+    }
+
+    .progress-shell {
+      display: grid;
+      gap: 10px;
+    }
+
+    .progress-track {
+      width: 100%;
+      height: 10px;
+      border-radius: 999px;
+      background: rgba(91, 107, 229, 0.1);
+      overflow: hidden;
+      position: relative;
+    }
+
+    .progress-value {
+      height: 100%;
+      width: 0;
+      border-radius: 999px;
+      background: linear-gradient(90deg, #5b6be5, #9f7aea);
+      transition: width 0.35s ease;
+    }
+
+    .progress-percent {
+      font-weight: 600;
+      color: var(--accent-strong);
+      font-size: 1.1rem;
+    }
+
+    .summary-footnote {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.85rem;
+    }
+
+    .summary-card--mode header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .mode-pill {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 4px 14px;
+      border-radius: 999px;
+      background: rgba(91, 107, 229, 0.16);
+      border: 1px solid rgba(91, 107, 229, 0.24);
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--accent-strong);
+    }
+
+    .mode-pill.is-active {
+      background: rgba(34, 197, 94, 0.18);
+      border-color: rgba(34, 197, 94, 0.28);
+      color: #047857;
+    }
+
+    .board {
+      display: grid;
+      gap: 20px;
+    }
+
+    .board-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .board-header h2 {
+      margin: 0;
+      font-size: 1.35rem;
+    }
+
+    .board-sub {
+      margin: 4px 0 0;
+      font-size: 0.9rem;
+      color: var(--muted);
+    }
+
+    .board-grid {
+      display: grid;
+      gap: 20px;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      align-items: stretch;
+    }
+
+    .day-card {
+      background: var(--panel-strong);
+      border-radius: var(--radius-xl);
+      border: 1px solid rgba(91, 107, 229, 0.16);
+      box-shadow: var(--shadow-card);
+      display: flex;
+      flex-direction: column;
+      min-height: 100%;
+      overflow: hidden;
+      transition: transform 0.25s ease, box-shadow 0.25s ease;
+    }
+
+    .day-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 20px 40px rgba(91, 107, 229, 0.22);
+    }
+
+    .day-card__header {
+      padding: 20px 24px;
+      background: linear-gradient(120deg, rgba(91, 107, 229, 0.16), rgba(255, 255, 255, 0.9));
+      border-bottom: 1px solid rgba(91, 107, 229, 0.18);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .day-card__title {
+      margin: 0;
+      font-size: 1.15rem;
+      font-weight: 600;
+    }
+
+    .day-card__meta {
+      margin: 6px 0 0;
+      font-size: 0.85rem;
+      color: var(--muted);
+    }
+
+    .day-card__percent {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 6px 14px;
+      border-radius: 999px;
+      background: rgba(91, 107, 229, 0.18);
+      color: var(--accent-strong);
+      font-size: 0.9rem;
+      font-weight: 600;
+    }
+
+    .day-card__body {
+      padding: 22px 24px 26px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+      flex: 1;
+    }
+
+    .kid-grid {
+      display: grid;
+      gap: 12px;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    }
+
+    @media (max-width: 540px) {
+      .kid-grid {
+        grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
+      }
+    }
+
+    .kid-block {
+      background: var(--panel-soft);
+      border-radius: var(--radius-lg);
+      border: 1px solid rgba(91, 107, 229, 0.12);
+      padding: 14px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      backdrop-filter: blur(4px);
+    }
+
+    .kid-block__header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 14px;
+      flex-wrap: wrap;
+    }
+
+    .kid-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 6px 12px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.9);
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.5);
+      font-weight: 600;
+      color: var(--text);
+      letter-spacing: 0.04em;
+    }
+
+    .kid-dot {
+      width: 30px;
+      height: 30px;
+      border-radius: 10px;
+      display: inline-block;
+      box-shadow: 0 6px 14px rgba(0, 0, 0, 0.16);
+    }
+
+    .kid-summary {
+      font-size: 0.85rem;
+      color: var(--muted);
+      font-weight: 500;
+    }
+
+    .slot-grid {
+      display: grid;
+      gap: 12px;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    }
+
+    .slot {
+      background: rgba(255, 255, 255, 0.92);
+      border-radius: var(--radius-lg);
+      border: 1px solid rgba(91, 107, 229, 0.14);
+      padding: 12px 14px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      min-height: 130px;
+      transition: var(--transition);
+      border-left: 6px solid var(--slot-accent, var(--accent));
+    }
+
+    .slot:hover {
+      border-color: rgba(91, 107, 229, 0.36);
+      box-shadow: 0 16px 32px rgba(91, 107, 229, 0.18);
+    }
+
+    .slot.is-active {
+      border-color: rgba(91, 107, 229, 0.48);
+      box-shadow: 0 0 0 3px rgba(91, 107, 229, 0.18);
+    }
+
+    .slot-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .slot-label {
+      font-size: 0.78rem;
+      letter-spacing: 0.32em;
+      font-weight: 600;
+      color: rgba(31, 38, 64, 0.5);
+    }
+
+    .slot-status {
+      padding: 4px 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(91, 107, 229, 0.2);
+      background: rgba(91, 107, 229, 0.12);
+      color: var(--accent-strong);
+      font-size: 0.78rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: var(--transition);
+    }
+
+    .slot-status:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
+    .slot[data-status="todo"] .slot-status {
+      background: rgba(245, 158, 11, 0.16);
+      border-color: rgba(245, 158, 11, 0.3);
+      color: #b45309;
+    }
+
+    .slot[data-status="done"] .slot-status {
+      background: rgba(34, 197, 94, 0.18);
+      border-color: rgba(34, 197, 94, 0.28);
+      color: #047857;
+    }
+
+    .slot[data-status="unset"] .slot-status {
+      background: rgba(148, 163, 184, 0.16);
+      border-color: rgba(148, 163, 184, 0.3);
+      color: rgba(71, 85, 105, 0.9);
+    }
+
+    .slot-task {
+      margin-top: 14px;
+      padding: 10px 12px;
+      border-radius: 14px;
+      background: rgba(91, 107, 229, 0.08);
+      border: 1px solid rgba(91, 107, 229, 0.18);
+      color: var(--text);
+      font-size: 0.9rem;
+      font-weight: 500;
+      line-height: 1.4;
+    }
+
+    .slot[data-status="done"] .slot-task {
+      background: rgba(34, 197, 94, 0.12);
+      border-color: rgba(34, 197, 94, 0.28);
+    }
+
+    .slot[data-status="todo"] .slot-task {
+      background: rgba(245, 158, 11, 0.12);
+      border-color: rgba(245, 158, 11, 0.24);
+    }
+
+    .slot-edit {
+      margin-top: 14px;
+      display: grid;
+      gap: 8px;
+    }
+
+    .task-select {
+      width: 100%;
+      border-radius: 12px;
+      border: 1px solid rgba(91, 107, 229, 0.28);
+      padding: 10px 12px;
+      font-size: 0.9rem;
+      background: rgba(255, 255, 255, 0.95);
+      transition: var(--transition);
+    }
+
+    .task-select:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 4px rgba(91, 107, 229, 0.16);
+    }
+
+    .edit-note {
+      font-size: 0.78rem;
+      color: rgba(31, 38, 64, 0.5);
+    }
+
+    .task-library {
+      display: grid;
+      gap: 16px;
+      background: var(--panel);
+      border-radius: var(--radius-xl);
+      border: 1px solid var(--border);
+      padding: 22px 24px;
+      box-shadow: var(--shadow-card);
+    }
+
+    .task-library h2 {
+      margin: 0;
+      font-size: 1.2rem;
+    }
+
+    .task-library__hint {
+      margin: 0;
+      font-size: 0.9rem;
+      color: var(--muted);
+    }
+
+    .task-library__list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .task-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 16px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.86);
+      border: 1px solid rgba(91, 107, 229, 0.18);
+      box-shadow: 0 10px 22px rgba(91, 107, 229, 0.12);
+      font-size: 0.9rem;
+      font-weight: 500;
+      color: var(--text);
+    }
+
+    .task-pill__icon {
+      font-size: 1.1rem;
+    }
+
+    .calendar-panel {
+      background: var(--panel);
+      border-radius: var(--radius-xl);
+      border: 1px solid var(--border);
+      padding: 24px;
+      box-shadow: var(--shadow-card);
+      display: grid;
+      gap: 16px;
+    }
+
+    .calendar-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .calendar-header h2 {
+      margin: 0;
+      font-size: 1.2rem;
+    }
+
+    .calendar-header p {
+      margin: 2px 0 0;
+      font-size: 0.85rem;
+      color: var(--muted);
+    }
+
+    .calendar-nav {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .calendar-nav button {
+      background: rgba(91, 107, 229, 0.12);
+      border: 1px solid rgba(91, 107, 229, 0.28);
+      border-radius: 999px;
+      padding: 6px 12px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--accent-strong);
+      cursor: pointer;
+      transition: var(--transition);
+    }
+
+    .calendar-nav button:hover {
+      background: rgba(91, 107, 229, 0.2);
+    }
+
+    .calendar-label {
+      font-weight: 600;
+      font-size: 0.95rem;
+      color: var(--text);
+      min-width: 120px;
+      text-align: center;
+    }
+
+    .calendar-weekdays {
+      display: grid;
+      grid-template-columns: repeat(7, minmax(0, 1fr));
+      gap: 4px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      text-transform: uppercase;
+    }
+
+    .calendar-weekdays span {
+      text-align: center;
+    }
+
+    .calendar-grid {
+      display: grid;
+      grid-template-columns: repeat(7, minmax(0, 1fr));
+      gap: 6px;
+    }
+
+    .calendar-cell {
+      background: var(--panel-strong);
+      border-radius: 16px;
+      border: 1px solid rgba(91, 107, 229, 0.16);
+      padding: 10px 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      min-height: 74px;
+      align-items: flex-start;
+      justify-content: flex-start;
+      transition: var(--transition);
+      position: relative;
+      cursor: pointer;
+    }
+
+    .calendar-cell:hover {
+      border-color: rgba(91, 107, 229, 0.3);
+      box-shadow: 0 12px 24px rgba(91, 107, 229, 0.18);
+    }
+
+    .calendar-cell--muted {
+      opacity: 0.45;
+      cursor: default;
+    }
+
+    .calendar-cell__date {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .calendar-cell__progress {
+      font-size: 0.75rem;
+      color: var(--muted);
+    }
+
+    .calendar-progress-bar {
+      width: 100%;
+      height: 6px;
+      border-radius: 999px;
+      background: rgba(91, 107, 229, 0.12);
+      overflow: hidden;
+    }
+
+    .calendar-progress-bar span {
+      display: block;
+      height: 100%;
+      background: linear-gradient(90deg, #5b6be5, #9f7aea);
+      width: 0;
+      transition: width 0.25s ease;
+    }
+
+    .calendar-cell--today {
+      border-color: rgba(91, 107, 229, 0.6);
+      box-shadow: 0 0 0 3px rgba(91, 107, 229, 0.18);
+    }
+
+    .calendar-cell--active-week {
+      border-color: rgba(91, 107, 229, 0.4);
+    }
+
+    .calendar-cell--inactive {
+      cursor: default;
+    }
+
+    .site-footer {
+      margin-top: 12px;
+    }
+
+    .footer-actions {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    @media (max-width: 720px) {
+      .site-header {
+        padding: 28px 0 18px;
+      }
+
+      .brand {
+        width: 100%;
+        justify-content: flex-start;
+      }
+
+      .nav-actions {
+        width: 100%;
+        justify-content: flex-start;
+      }
+
+      .summary-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .board-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .slot-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .control-form-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .manager-item.kid,
+      .manager-item.task {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .manager-item.kid button,
+      .manager-item.task button {
+        grid-column: span 2;
+      }
+
+      .footer-actions {
+        justify-content: stretch;
+      }
+
+      .footer-actions .button {
+        flex: 1;
+        justify-content: center;
+      }
+    }
+
+    @media (hover: hover) {
+      .slot-status:not(:disabled):hover {
+        transform: translateY(-1px);
+        box-shadow: 0 12px 24px rgba(91, 107, 229, 0.18);
+      }
+    }
+  </style>
 </head>
 <body>
-  <header class="site-header">
-    <div class="brand">
-      <div class="brand-icon">Aurora</div>
-      <div class="brand-copy">
-        <h1 class="brand-title">お手伝いカレンダー</h1>
-        <p class="brand-sub">家族みんなで予定をシェアしよう</p>
-      </div>
-    </div>
-    <nav class="actions">
-      <button id="settingsButton" class="action-btn">設定</button>
-      <button id="exportButton" class="action-btn">エクスポート</button>
-    </nav>
-  </header>
-
-  <main class="layout">
-    <section class="hero" id="hero"></section>
-
-    <section class="panels">
-      <section class="panel calendar-panel">
-        <header class="panel-header">
-          <h2>カレンダー</h2>
-          <div class="calendar-nav">
-            <button id="prevMonth" aria-label="前の月">◀</button>
-            <div id="calendarLabel"></div>
-            <button id="nextMonth" aria-label="次の月">▶</button>
-          </div>
-        </header>
-        <div class="calendar-wrapper">
-          <div id="calendar" class="calendar"></div>
+  <div class="app">
+    <header class="site-header">
+      <div class="brand">
+        <span class="brand-icon" aria-hidden="true">🌟</span>
+        <div>
+          <h1 class="brand-title">お手伝いウィークリープランナー</h1>
+          <p class="brand-copy">家族の「できた！」を増やす 1 週間の作戦ボード。</p>
         </div>
-        <footer class="calendar-legend">
-          <span class="swatch swatch-complete">全部完了</span>
-          <span class="swatch swatch-partial">途中まで</span>
-          <span class="swatch swatch-empty">未着手</span>
-        </footer>
+      </div>
+      <nav class="nav-actions" aria-label="週の移動">
+        <button class="button ghost" data-week-nav="prev" type="button">← 前の週</button>
+        <button class="button secondary" data-week-nav="current" type="button">今週へ戻る</button>
+        <button class="button ghost" data-week-nav="next" type="button">次の週 →</button>
+      </nav>
+    </header>
+
+    <div class="layout">
+      <section id="editControlPanel" class="control-panel" aria-label="編集コントロールセンター">
+        <div class="control-panel__header">
+          <div>
+            <p class="control-panel__eyebrow">EDITING WORKSPACE</p>
+            <h2 class="control-panel__title">編集コントロールセンター</h2>
+            <p class="control-panel__text">曜日・子ども・スロットを選んで素早くタスクを割り当てたり、日全体をまとめて調整できます。スマホでも片手で操作できるように設計しています。</p>
+          </div>
+          <div class="control-panel__toggle">
+            <button id="editToggle" class="button primary" type="button">編集モードをオン</button>
+            <p id="editToggleHint" class="control-panel__quick-hint">必要なときにオンにして編集します。</p>
+          </div>
+        </div>
+
+        <div class="control-panel__form">
+          <div class="control-form-grid">
+            <div class="control-field">
+              <label for="controlDay">曜日</label>
+              <select id="controlDay" class="control-select"></select>
+            </div>
+            <div class="control-field">
+              <label for="controlKid">子ども</label>
+              <select id="controlKid" class="control-select"></select>
+            </div>
+            <div class="control-field">
+              <label for="controlSlot">スロット</label>
+              <select id="controlSlot" class="control-select"></select>
+            </div>
+            <div class="control-field">
+              <label for="controlTask">タスク</label>
+              <select id="controlTask" class="control-select"></select>
+            </div>
+            <div class="control-panel__status" id="controlCurrentStatus">
+              <strong>選択中のスロット</strong>
+              <span>まだ選択されていません。</span>
+            </div>
+          </div>
+
+          <div class="control-panel__actions">
+            <button id="controlAssign" class="button primary" type="button">タスクを割り当てる</button>
+            <button id="controlClearSlot" class="button ghost" type="button">このスロットをクリア</button>
+            <button id="controlClearDay" class="button ghost" type="button">この日をリセット</button>
+            <button id="controlCopyPrev" class="button secondary" type="button">前の日からコピー</button>
+            <button id="controlAutoFill" class="button secondary" type="button">空き枠にタスクを自動配置</button>
+          </div>
+
+          <div class="control-panel__manager">
+            <div class="manager-block">
+              <div class="manager-header">
+                <h3>子どもリスト</h3>
+                <button id="addKid" class="button secondary small" type="button">＋ 子どもを追加</button>
+              </div>
+              <ul id="kidManager" class="manager-list manager-list--kid"></ul>
+            </div>
+            <div class="manager-block">
+              <div class="manager-header">
+                <h3>タスクリスト</h3>
+                <button id="addTask" class="button secondary small" type="button">＋ タスクを追加</button>
+              </div>
+              <ul id="taskManager" class="manager-list manager-list--task"></ul>
+            </div>
+          </div>
+        </div>
       </section>
 
-      <section class="panel dashboard-panel">
-        <header class="panel-header">
-          <h2 id="selectedDateLabel"></h2>
-          <div class="dashboard-actions">
-            <button data-action="reset-day">今日をリセット</button>
-            <button data-action="reset-month">今月をリセット</button>
+      <div class="edit-banner" id="editBanner">編集モード中：プランを変更すると自動で保存されます。</div>
+
+      <section class="summary-grid" aria-label="週間サマリー">
+        <article class="summary-card summary-card--hero">
+          <p class="summary-eyebrow">WEEKLY SNAPSHOT</p>
+          <h2 class="summary-title" id="weekLabel">読み込み中...</h2>
+          <p class="summary-text">曜日ごとのミッションを確認しながら、達成したら「できた！」に切り替えてスターを集めましょう。編集モードをオンにするとタスクの入れ替えが可能です。</p>
+        </article>
+        <article class="summary-card summary-card--stats">
+          <header>
+            <h3 class="summary-title">進捗</h3>
+            <div class="summary-metric"><span id="starsEarned">0</span><span>/</span><span id="starsTarget">0</span></div>
+          </header>
+          <div class="progress-shell">
+            <div id="progressTrack" class="progress-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+              <div id="progressBar" class="progress-value"></div>
+            </div>
+            <span id="progressPercent" class="progress-percent">0%</span>
+          </div>
+          <p class="summary-footnote">スターは「できた！」にしたタスク数です。目標を決めてご褒美を設定してあげましょう。</p>
+        </article>
+
+        <article class="summary-card summary-card--mode">
+          <header>
+            <h3 class="summary-title">編集モード</h3>
+            <span id="editStateLabel" class="mode-pill">OFF</span>
+          </header>
+          <p class="summary-text" id="editModeHint">タスクを組み替えるときは上のボタンで編集モードをオンにします。</p>
+        </article>
+      </section>
+
+      <section class="board" aria-label="週間プラン">
+        <header class="board-header">
+          <div>
+            <h2>今週のプランカード</h2>
+            <p class="board-sub">1 人につき 3 件まで設定できます。家族会議で決めたミッションを割り当ててください。</p>
           </div>
         </header>
-        <div id="dashboard" class="kids-grid"></div>
+        <div id="cardsContainer" class="board-grid"></div>
       </section>
-    </section>
 
-    <section class="panel summary-panel">
-      <header class="panel-header">
-        <h2>月間ハイライト</h2>
-      </header>
-      <div id="summary" class="summary-grid"></div>
-    </section>
-  </main>
-
-  <div id="settingsModal" class="modal" aria-hidden="true" aria-modal="true" role="dialog">
-    <div class="modal-backdrop" data-close="settings"></div>
-    <div class="modal-content">
-      <header class="modal-header">
-        <h2>設定</h2>
-        <button class="modal-close" data-close="settings" aria-label="閉じる">×</button>
-      </header>
-      <div class="modal-body" id="settingsBody"></div>
-      <footer class="modal-footer">
-        <button id="settingsSave" class="primary" type="button">保存</button>
-        <button class="ghost" data-close="settings" type="button">キャンセル</button>
-      </footer>
+      <section class="calendar-panel" aria-label="カレンダー">
+        <header class="calendar-header">
+          <div>
+            <h2>カレンダー</h2>
+            <p>月ごとのスター達成状況をひと目で確認できます</p>
+          </div>
+          <div class="calendar-nav">
+            <button type="button" data-calendar-nav="prev">←</button>
+            <span id="calendarLabel" class="calendar-label"></span>
+            <button type="button" data-calendar-nav="next">→</button>
+          </div>
+        </header>
+        <div class="calendar-weekdays">
+          <span>日</span>
+          <span>月</span>
+          <span>火</span>
+          <span>水</span>
+          <span>木</span>
+          <span>金</span>
+          <span>土</span>
+        </div>
+        <div id="calendarGrid" class="calendar-grid" aria-live="polite"></div>
+      </section>
+      <section class="task-library" aria-label="タスクの候補">
+        <h2>よく使うタスク</h2>
+        <p class="task-library__hint">編集モードでカードをタップするとこのリストから選択できます。リスト自体も上の編集コントロールでカスタマイズできます。</p>
+        <div id="taskLibrary" class="task-library__list"></div>
+      </section>
     </div>
+
+    <footer class="site-footer">
+      <div class="footer-actions">
+        <button id="resetAll" class="button danger" type="button">今週のデータをリセット</button>
+      </div>
+    </footer>
   </div>
 
-  <template id="kidTemplate">
-    <article class="kid-card">
-      <header class="kid-card-header">
-        <div class="kid-id">
-          <span class="kid-avatar"></span>
-          <div>
-            <h3 class="kid-name"></h3>
-            <p class="kid-streak"></p>
-          </div>
-        </div>
-        <div class="kid-stars">
-          <span class="label">スター</span>
-          <strong class="value"></strong>
-        </div>
-      </header>
-      <div class="kid-progress">
-        <div class="ring">
-          <canvas width="140" height="140"></canvas>
-          <div class="ring-label"></div>
-        </div>
-        <div class="progress-copy">
-          <p class="progress-headline"></p>
-          <div class="progress-bar"><span></span></div>
-          <p class="progress-caption"></p>
-        </div>
-      </div>
-      <ul class="task-list"></ul>
-    </article>
-  </template>
+  <script>
+    (() => {
+      const SLOTS_PER_KID = 3;
+      const STATUS_SEQUENCE = ['todo', 'done', 'unset'];
+      const STATUS_LABELS = {
+        todo: 'がんばる！',
+        done: 'できた！',
+        unset: '未チェック'
+      };
+      const STORAGE_PREFIX = 'kids-week-planner-v1-';
+      const CONFIG_STORAGE_KEY = 'kids-week-planner-config-v1';
+      const DAY_NAMES = ['日', '月', '火', '水', '木', '金', '土'];
+      const DEFAULT_KID_COLORS = ['#5b6be5', '#f97316', '#22c55e', '#ec4899', '#14b8a6', '#6366f1'];
 
-  <script src="app.js" defer></script>
+      let kids = [
+        { id: 'kid-hikari', name: 'ひかり', color: '#5b6be5' },
+        { id: 'kid-mirai', name: 'みらい', color: '#f97316' },
+        { id: 'kid-sora', name: 'そら', color: '#22c55e' }
+      ];
+
+      let tasks = [
+        { id: 'task-dishes', label: '夕食後のお皿洗い', icon: '🍽️' },
+        { id: 'task-laundry', label: '洗濯ものをたたむ', icon: '🧺' },
+        { id: 'task-trash', label: 'ゴミを集めて出す', icon: '🗑️' },
+        { id: 'task-playroom', label: 'プレイルームを片づける', icon: '🧸' },
+        { id: 'task-desk', label: '学習机を整える', icon: '📚' },
+        { id: 'task-plants', label: '植物へ水やり', icon: '🌱' },
+        { id: 'task-pets', label: 'ペットのお世話', icon: '🐾' },
+        { id: 'task-table', label: 'テーブルをふく', icon: '🧼' }
+      ];
+
+      let taskMap = new Map();
+      let validTaskIds = new Set();
+
+      const calendarWeekCache = new Map();
+
+const storageAvailable = (() => {
+        try {
+          const key = '__planner_storage_test__';
+          localStorage.setItem(key, '1');
+          localStorage.removeItem(key);
+          return true;
+        } catch {
+          console.warn('ローカルストレージが利用できないため、ページを再読み込みするとデータは消去されます。');
+          return false;
+        }
+      })();
+
+      const state = {
+        weekOffset: 0,
+        editMode: false,
+        weekStart: startOfWeek(new Date()),
+        weekKey: '',
+        weekData: null,
+        controlSelection: {
+          dayIndex: 0,
+          kidId: 'kid-hikari',
+          slotIndex: 0,
+          taskId: ''
+        },
+        calendarMonth: startOfMonth(new Date())
+      };
+
+      const elements = {
+        weekLabel: document.getElementById('weekLabel'),
+        starsEarned: document.getElementById('starsEarned'),
+        starsTarget: document.getElementById('starsTarget'),
+        progressPercent: document.getElementById('progressPercent'),
+        progressTrack: document.getElementById('progressTrack'),
+        progressBar: document.getElementById('progressBar'),
+        calendarLabel: document.getElementById('calendarLabel'),
+        calendarGrid: document.getElementById('calendarGrid'),
+        cardsContainer: document.getElementById('cardsContainer'),
+        editToggle: document.getElementById('editToggle'),
+        editToggleHint: document.getElementById('editToggleHint'),
+        editStateLabel: document.getElementById('editStateLabel'),
+        editModeHint: document.getElementById('editModeHint'),
+        editBanner: document.getElementById('editBanner'),
+        controlPanel: document.getElementById('editControlPanel'),
+        controlDay: document.getElementById('controlDay'),
+        controlKid: document.getElementById('controlKid'),
+        controlSlot: document.getElementById('controlSlot'),
+        controlTask: document.getElementById('controlTask'),
+        controlAssign: document.getElementById('controlAssign'),
+        controlClearSlot: document.getElementById('controlClearSlot'),
+        controlClearDay: document.getElementById('controlClearDay'),
+        controlCopyPrev: document.getElementById('controlCopyPrev'),
+        controlAutoFill: document.getElementById('controlAutoFill'),
+        controlCurrentStatus: document.getElementById('controlCurrentStatus'),
+        kidManager: document.getElementById('kidManager'),
+        addKid: document.getElementById('addKid'),
+        taskManager: document.getElementById('taskManager'),
+        addTask: document.getElementById('addTask'),
+        resetAll: document.getElementById('resetAll'),
+        taskLibrary: document.getElementById('taskLibrary')
+      };
+      init();
+
+      function init() {
+        refreshTaskLookup();
+        loadConfig();
+        refreshTaskLookup();
+        state.calendarMonth = startOfMonth(state.weekStart);
+        renderTaskLibrary();
+        setupControlPanel();
+        bindEvents();
+        goToWeek(0);
+      }
+
+      function bindEvents() {
+        document.querySelectorAll('[data-week-nav]').forEach((button) => {
+          button.addEventListener('click', () => {
+            const mode = button.dataset.weekNav;
+            if (mode === 'prev') {
+              goToWeek(state.weekOffset - 1);
+            } else if (mode === 'next') {
+              goToWeek(state.weekOffset + 1);
+            } else {
+              goToWeek(0);
+            }
+          });
+        });
+
+        document.querySelectorAll('[data-calendar-nav]').forEach((button) => {
+          button.addEventListener('click', () => {
+            const mode = button.dataset.calendarNav;
+            if (mode === 'prev') {
+              changeCalendarMonth(-1);
+            } else if (mode === 'next') {
+              changeCalendarMonth(1);
+            }
+          });
+        });
+
+        if (elements.calendarGrid) {
+          elements.calendarGrid.addEventListener('click', handleCalendarClick);
+        }
+
+        if (elements.editToggle) {
+          elements.editToggle.addEventListener('click', () => {
+            state.editMode = !state.editMode;
+            render();
+          });
+        }
+
+        if (elements.resetAll) {
+          elements.resetAll.addEventListener('click', () => {
+            if (!confirm('今週のデータをすべてリセットしますか？')) return;
+            state.weekData = createEmptyWeekData(state.weekStart);
+            if (storageAvailable) {
+              localStorage.removeItem(STORAGE_PREFIX + state.weekKey);
+            }
+            saveWeekData();
+            render();
+          });
+        }
+
+        if (elements.controlDay) {
+          elements.controlDay.addEventListener('change', (event) => {
+            state.controlSelection.dayIndex = Number(event.target.value) || 0;
+            render();
+          });
+        }
+
+        if (elements.controlKid) {
+          elements.controlKid.addEventListener('change', (event) => {
+            state.controlSelection.kidId = event.target.value;
+            render();
+          });
+        }
+
+        if (elements.controlSlot) {
+          elements.controlSlot.addEventListener('change', (event) => {
+            state.controlSelection.slotIndex = Number(event.target.value) || 0;
+            render();
+          });
+        }
+
+        if (elements.controlTask) {
+          elements.controlTask.addEventListener('change', (event) => {
+            state.controlSelection.taskId = event.target.value;
+          });
+        }
+
+        if (elements.controlAssign) {
+          elements.controlAssign.addEventListener('click', handleControlAssign);
+        }
+
+        if (elements.controlClearSlot) {
+          elements.controlClearSlot.addEventListener('click', handleControlClearSlot);
+        }
+
+        if (elements.controlClearDay) {
+          elements.controlClearDay.addEventListener('click', handleControlClearDay);
+        }
+
+        if (elements.controlCopyPrev) {
+          elements.controlCopyPrev.addEventListener('click', handleControlCopyPrev);
+        }
+
+        if (elements.controlAutoFill) {
+          elements.controlAutoFill.addEventListener('click', handleControlAutoFill);
+        }
+
+        if (elements.cardsContainer) {
+          elements.cardsContainer.addEventListener('click', (event) => {
+            const statusButton = event.target.closest('.slot-status');
+            if (statusButton) return;
+            const taskSelector = event.target.closest('.task-select');
+            if (taskSelector) return;
+            const slotElement = event.target.closest('.slot');
+            if (!slotElement) return;
+            const dayIndex = Number(slotElement.getAttribute('data-day-index'));
+            const kidId = slotElement.getAttribute('data-kid-id');
+            const slotIndex = Number(slotElement.getAttribute('data-slot-index'));
+            if (isNaN(dayIndex) || isNaN(slotIndex) || !kidId) return;
+            state.controlSelection.dayIndex = dayIndex;
+            state.controlSelection.kidId = kidId;
+            state.controlSelection.slotIndex = slotIndex;
+            const slotData = getSlot(dayIndex, kidId, slotIndex);
+            state.controlSelection.taskId = slotData && slotData.taskId ? slotData.taskId : '';
+            render();
+          });
+        }
+
+        if (elements.addKid) {
+          elements.addKid.addEventListener('click', () => {
+            if (!state.editMode) {
+              state.editMode = true;
+            }
+            addKid();
+          });
+        }
+
+        if (elements.kidManager) {
+          elements.kidManager.addEventListener('change', handleKidManagerChange);
+          elements.kidManager.addEventListener('click', handleKidManagerClick);
+        }
+
+        if (elements.addTask) {
+          elements.addTask.addEventListener('click', () => {
+            if (!state.editMode) {
+              state.editMode = true;
+            }
+            addTask();
+          });
+        }
+
+        if (elements.taskManager) {
+          elements.taskManager.addEventListener('change', handleTaskManagerChange);
+          elements.taskManager.addEventListener('click', handleTaskManagerClick);
+        }
+      }
+
+      function renderTaskLibrary() {
+        if (!elements.taskLibrary) return;
+        elements.taskLibrary.innerHTML = '';
+        tasks.forEach((task) => {
+          const pill = document.createElement('div');
+          pill.className = 'task-pill';
+          const iconSpan = document.createElement('span');
+          iconSpan.className = 'task-pill__icon';
+          iconSpan.textContent = task.icon || '⭐';
+          const labelSpan = document.createElement('span');
+          labelSpan.textContent = task.label;
+          pill.appendChild(iconSpan);
+          pill.appendChild(labelSpan);
+          elements.taskLibrary.appendChild(pill);
+        });
+      }
+
+      function setupControlPanel() {
+        if (elements.controlKid) {
+          let kidOptions = '';
+          kids.forEach((kid) => {
+            kidOptions += '<option value="' + kid.id + '">' + escapeHtml(kid.name) + '</option>';
+          });
+          elements.controlKid.innerHTML = kidOptions;
+        }
+        if (elements.controlSlot) {
+          let slotOptions = '';
+          for (let index = 0; index < SLOTS_PER_KID; index += 1) {
+            const labelNumber = ('0' + (index + 1)).slice(-2);
+            slotOptions += '<option value="' + index + '">SLOT ' + labelNumber + '</option>';
+          }
+          elements.controlSlot.innerHTML = slotOptions;
+        }
+        if (elements.controlTask) {
+          let taskOptions = '<option value="">タスク未設定</option>';
+          tasks.forEach((task) => {
+            taskOptions += '<option value="' + task.id + '">' + escapeHtml((task.icon || '⭐') + ' ' + task.label) + '</option>';
+          });
+          elements.controlTask.innerHTML = taskOptions;
+        }
+      }
+
+      function goToWeek(offset) {
+        state.weekOffset = offset;
+        const pivot = new Date();
+        pivot.setHours(0, 0, 0, 0);
+        pivot.setDate(pivot.getDate() + offset * 7);
+        state.weekStart = startOfWeek(pivot);
+        state.weekKey = buildWeekKey(state.weekStart);
+        state.calendarMonth = startOfMonth(state.weekStart);
+        state.weekData = loadWeekData(state.weekKey, state.weekStart);
+        ensureControlSelectionValid();
+        render();
+      }
+
+      function render() {
+        if (!state.weekData) return;
+        renderTaskLibrary();
+        setupControlPanel();
+        const kidsSynced = syncWeekDataWithKids();
+        const tasksCleaned = cleanupSlotsForMissingTasks();
+        updateWeekLabel();
+        renderCards();
+        updateSummary();
+        updateEditState();
+        updateControlPanel();
+        renderCalendar();
+        if (kidsSynced || tasksCleaned) {
+          saveWeekData();
+        }
+      }
+
+      function updateWeekLabel() {
+        const start = new Date(state.weekStart);
+        const end = new Date(state.weekStart);
+        end.setDate(end.getDate() + 6);
+        elements.weekLabel.textContent = formatJapaneseDate(start) + ' 〜 ' + formatJapaneseDate(end);
+      }
+      function renderCards() {
+        if (!elements.cardsContainer || !state.weekData) return;
+        elements.cardsContainer.innerHTML = '';
+        state.weekData.days.forEach((day, dayIndex) => {
+          elements.cardsContainer.appendChild(createDayCard(day, dayIndex));
+        });
+      }
+
+      function createDayCard(day, dayIndex) {
+        const dayDate = parseISO(day.dateISO);
+        const summary = summarizeDay(day);
+        const card = document.createElement('article');
+        card.className = 'day-card';
+
+        const header = document.createElement('header');
+        header.className = 'day-card__header';
+
+        const titleWrapper = document.createElement('div');
+        const title = document.createElement('h3');
+        title.className = 'day-card__title';
+        title.textContent = formatShortDate(dayDate) + '（' + DAY_NAMES[dayDate.getDay()] + '）';
+        const subtitle = document.createElement('p');
+        subtitle.className = 'day-card__meta';
+        subtitle.textContent = summary.total ? 'スター ' + summary.done + ' / ' + summary.total : 'スター 0 / 0';
+        titleWrapper.appendChild(title);
+        titleWrapper.appendChild(subtitle);
+
+        const percentBadge = document.createElement('span');
+        percentBadge.className = 'day-card__percent';
+        const percent = summary.total ? Math.round((summary.done / summary.total) * 100) : 0;
+        percentBadge.textContent = percent + '%';
+
+        header.appendChild(titleWrapper);
+        header.appendChild(percentBadge);
+
+        const body = document.createElement('div');
+        body.className = 'day-card__body';
+
+        const kidGrid = document.createElement('div');
+        kidGrid.className = 'kid-grid';
+
+        kids.forEach((kid) => {
+          kidGrid.appendChild(createKidBlock(day, dayIndex, kid));
+        });
+
+        body.appendChild(kidGrid);
+        card.appendChild(header);
+        card.appendChild(body);
+        return card;
+      }
+
+      function createKidBlock(day, dayIndex, kid) {
+        const wrapper = document.createElement('section');
+        wrapper.className = 'kid-block';
+
+        const header = document.createElement('div');
+        header.className = 'kid-block__header';
+
+        const chip = document.createElement('span');
+        chip.className = 'kid-chip';
+        const dot = document.createElement('span');
+        dot.className = 'kid-dot';
+        dot.style.background = kid.color;
+        chip.appendChild(dot);
+        chip.appendChild(document.createTextNode(kid.name));
+
+        const kidSlots = day.slots[kid.id] || [];
+        const doneCount = kidSlots.filter((slot) => slot.taskId && slot.status === 'done').length;
+        const totalCount = kidSlots.filter((slot) => slot.taskId).length;
+
+        const summary = document.createElement('span');
+        summary.className = 'kid-summary';
+        summary.textContent = totalCount ? 'スター ' + doneCount + ' / ' + totalCount : 'スター 0 / 0';
+
+        header.appendChild(chip);
+        header.appendChild(summary);
+
+        const slotGrid = document.createElement('div');
+        slotGrid.className = 'slot-grid';
+
+        kidSlots.forEach((slotData, slotIndex) => {
+          slotGrid.appendChild(createSlotElement(dayIndex, kid, slotIndex, slotData));
+        });
+
+        wrapper.appendChild(header);
+        wrapper.appendChild(slotGrid);
+        return wrapper;
+      }
+
+      function createSlotElement(dayIndex, kid, slotIndex, slotData) {
+        const slot = document.createElement('div');
+        slot.className = 'slot';
+        slot.setAttribute('data-day-index', String(dayIndex));
+        slot.setAttribute('data-kid-id', kid.id);
+        slot.setAttribute('data-slot-index', String(slotIndex));
+        const status = slotData.status || 'unset';
+        slot.dataset.status = status;
+        slot.style.setProperty('--slot-accent', kid.color);
+
+        if (
+          state.controlSelection.dayIndex === dayIndex &&
+          state.controlSelection.kidId === kid.id &&
+          state.controlSelection.slotIndex === slotIndex
+        ) {
+          slot.classList.add('is-active');
+        }
+
+        const topRow = document.createElement('div');
+        topRow.className = 'slot-top';
+
+        const label = document.createElement('span');
+        label.className = 'slot-label';
+        const labelNumber = ('0' + (slotIndex + 1)).slice(-2);
+        label.textContent = 'SLOT ' + labelNumber;
+
+        const statusButton = document.createElement('button');
+        statusButton.type = 'button';
+        statusButton.className = 'slot-status';
+        statusButton.textContent = STATUS_LABELS[status] || STATUS_LABELS.unset;
+        statusButton.setAttribute('aria-label', kid.name + 'の' + label.textContent + 'のステータスを切り替える');
+        if (!slotData.taskId) {
+          statusButton.disabled = true;
+        }
+        statusButton.addEventListener('click', (event) => {
+          event.stopPropagation();
+          cycleStatus(dayIndex, kid.id, slotIndex);
+        });
+
+        topRow.appendChild(label);
+        topRow.appendChild(statusButton);
+
+        const taskBox = document.createElement('div');
+        taskBox.className = 'slot-task';
+        if (slotData.taskId && taskMap.has(slotData.taskId)) {
+          const task = taskMap.get(slotData.taskId);
+          taskBox.textContent = (task.icon || '⭐') + ' ' + task.label;
+        } else {
+          taskBox.textContent = 'タスク未設定';
+        }
+
+        const editSection = document.createElement('div');
+        editSection.className = 'slot-edit';
+        if (!state.editMode) {
+          editSection.style.display = 'none';
+        }
+
+        const select = document.createElement('select');
+        select.className = 'task-select';
+        select.setAttribute('aria-label', kid.name + 'のタスクを選択');
+        const emptyOption = document.createElement('option');
+        emptyOption.value = '';
+        emptyOption.textContent = 'タスク未設定';
+        select.appendChild(emptyOption);
+        tasks.forEach((task) => {
+          const option = document.createElement('option');
+          option.value = task.id;
+          option.textContent = (task.icon || '⭐') + ' ' + task.label;
+          select.appendChild(option);
+        });
+        select.value = slotData.taskId || '';
+        select.addEventListener('change', (event) => {
+          event.stopPropagation();
+          handleTaskChange(dayIndex, kid.id, slotIndex, event.target.value);
+        });
+
+        const note = document.createElement('span');
+        note.className = 'edit-note';
+        note.textContent = '選択すると即時保存されます。';
+
+        editSection.appendChild(select);
+        editSection.appendChild(note);
+
+        slot.appendChild(topRow);
+        slot.appendChild(taskBox);
+        slot.appendChild(editSection);
+        return slot;
+      }
+
+      function updateSummary() {
+        if (!state.weekData) return;
+        const summary = summarizeWeek();
+        elements.starsEarned.textContent = String(summary.done);
+        elements.starsTarget.textContent = String(summary.total);
+        const percent = summary.total ? Math.round((summary.done / summary.total) * 100) : 0;
+        elements.progressPercent.textContent = percent + '%';
+        if (elements.progressBar) {
+          elements.progressBar.style.width = percent + '%';
+        }
+        if (elements.progressTrack) {
+          elements.progressTrack.setAttribute('aria-valuenow', String(percent));
+          elements.progressTrack.setAttribute('aria-valuemin', '0');
+          elements.progressTrack.setAttribute('aria-valuemax', '100');
+        }
+      }
+      function updateEditState() {
+        document.body.classList.toggle('is-edit', state.editMode);
+        elements.editStateLabel.textContent = state.editMode ? 'ON' : 'OFF';
+        elements.editStateLabel.classList.toggle('is-active', state.editMode);
+        elements.editModeHint.textContent = state.editMode
+          ? 'タスクや子どもリストを編集して新しいプランを作成できます。完了したら編集モードをオフにしてください。'
+          : 'タスクを組み替えるときは上のボタンで編集モードをオンにします。';
+        if (elements.editToggle) {
+          elements.editToggle.textContent = state.editMode ? '編集モードをオフ' : '編集モードをオン';
+          elements.editToggle.classList.toggle('primary', !state.editMode);
+          elements.editToggle.classList.toggle('secondary', state.editMode);
+        }
+      }
+
+      function updateControlPanel() {
+        if (!elements.controlPanel || !state.weekData) return;
+        elements.controlPanel.setAttribute('data-active', state.editMode ? 'true' : 'false');
+        if (elements.controlDay) {
+          populateControlDayOptions();
+          elements.controlDay.value = String(state.controlSelection.dayIndex);
+        }
+        if (elements.controlKid) {
+          elements.controlKid.value = state.controlSelection.kidId;
+        }
+        if (elements.controlSlot) {
+          elements.controlSlot.value = String(state.controlSelection.slotIndex);
+        }
+        if (elements.controlTask) {
+          if (elements.controlTask.querySelector('option[value="' + state.controlSelection.taskId + '"]')) {
+            elements.controlTask.value = state.controlSelection.taskId;
+          } else {
+            elements.controlTask.value = '';
+          }
+        }
+        renderKidManager();
+        renderTaskManager();
+        updateControlPanelStatus();
+      }
+
+      function populateControlDayOptions() {
+        if (!elements.controlDay || !state.weekData) return;
+        let options = '';
+        state.weekData.days.forEach((day, index) => {
+          const dayDate = parseISO(day.dateISO);
+          const label = formatShortDate(dayDate) + '（' + DAY_NAMES[dayDate.getDay()] + '）';
+          options += '<option value="' + index + '">' + escapeHtml(label) + '</option>';
+        });
+        elements.controlDay.innerHTML = options;
+      }
+
+      function updateControlPanelStatus() {
+        if (!elements.controlCurrentStatus || !state.weekData) return;
+        ensureControlSelectionValid();
+        const dayIndex = state.controlSelection.dayIndex;
+        const kidId = state.controlSelection.kidId;
+        const slotIndex = state.controlSelection.slotIndex;
+        const day = state.weekData.days[dayIndex];
+        if (!day) {
+          elements.controlCurrentStatus.innerHTML = '<strong>選択中のスロット</strong><span>まだ選択されていません。</span>';
+          return;
+        }
+        const dayDate = parseISO(day.dateISO);
+        const kid = kids.find((item) => item.id === kidId) || kids[0];
+        const slot = getSlot(dayIndex, kid ? kid.id : '', slotIndex);
+        let summary = 'タスク未設定';
+        let statusLabel = STATUS_LABELS.unset;
+        if (slot && slot.taskId && taskMap.has(slot.taskId)) {
+          const task = taskMap.get(slot.taskId);
+          summary = (task.icon || '⭐') + ' ' + task.label;
+          statusLabel = STATUS_LABELS[slot.status] || STATUS_LABELS.todo;
+        }
+        const kidLabel = kid ? kid.name : '未定';
+        const slotLabel = ('0' + (slotIndex + 1)).slice(-2);
+        const parts = [
+          '<strong>' + escapeHtml(formatJapaneseDate(dayDate)) + '</strong>',
+          '<span>' + escapeHtml(kidLabel + ' / SLOT ' + slotLabel) + '</span>',
+          '<span>現在: ' + escapeHtml(summary + '（' + statusLabel + '）') + '</span>'
+        ];
+        elements.controlCurrentStatus.innerHTML = parts.join('');
+        const canEdit = state.editMode;
+        const slotHasContent = !!(slot && (slot.taskId || slot.status !== 'unset'));
+        if (elements.controlAssign) {
+          elements.controlAssign.disabled = !canEdit;
+        }
+        if (elements.controlClearSlot) {
+          elements.controlClearSlot.disabled = !canEdit || !slotHasContent;
+        }
+        if (elements.controlClearDay) {
+          elements.controlClearDay.disabled = !canEdit;
+        }
+        if (elements.controlCopyPrev) {
+          elements.controlCopyPrev.disabled = !canEdit || dayIndex === 0;
+        }
+        if (elements.controlAutoFill) {
+          const hasEmpty = kids.some((child) => {
+            const slots = day.slots[child.id] || [];
+            return slots.some((item) => !item.taskId);
+          });
+          elements.controlAutoFill.disabled = !canEdit || !hasEmpty;
+        }
+      }
+
+      function renderKidManager() {
+        if (!elements.kidManager) return;
+        const disabled = !state.editMode;
+        let html = '';
+        if (!kids.length) {
+          html = '<li class="manager-empty">子どもが登録されていません</li>';
+        } else {
+          html = kids
+            .map((kid, index) => {
+              const nameValue = escapeHtml(kid.name);
+              const colorValue = escapeHtml(validateColor(kid.color) ? kid.color : DEFAULT_KID_COLORS[index % DEFAULT_KID_COLORS.length]);
+              const removeDisabled = disabled || kids.length <= 1 ? ' disabled' : '';
+              const inputDisabled = disabled ? ' disabled' : '';
+              return (
+                '<li class="manager-item kid" data-kid-id="' + kid.id + '">' +
+                '<input type="text" data-kid-field="name" value="' + nameValue + '" maxlength="16" placeholder="なまえ"' + inputDisabled + '>' +
+                '<input type="color" data-kid-field="color" value="' + colorValue + '"' + inputDisabled + '>' +
+                '<button type="button" class="button ghost small" data-action="remove-kid"' + removeDisabled + '>削除</button>' +
+                '</li>'
+              );
+            })
+            .join('');
+        }
+        elements.kidManager.innerHTML = html;
+        elements.kidManager.classList.toggle('is-disabled', disabled);
+        if (elements.addKid) {
+          elements.addKid.disabled = disabled;
+        }
+      }
+
+      function renderTaskManager() {
+        if (!elements.taskManager) return;
+        const disabled = !state.editMode;
+        let html = '';
+        if (!tasks.length) {
+          html = '<li class="manager-empty">タスクが登録されていません</li>';
+        } else {
+          html = tasks
+            .map((task, index) => {
+              const labelValue = escapeHtml(task.label);
+              const iconValue = escapeHtml(limitText(task.icon || '⭐', 2));
+              const removeDisabled = disabled || tasks.length <= 1 ? ' disabled' : '';
+              const inputDisabled = disabled ? ' disabled' : '';
+              return (
+                '<li class="manager-item task" data-task-id="' + task.id + '">' +
+                '<input type="text" data-task-field="icon" value="' + iconValue + '" maxlength="4" placeholder="絵文字"' + inputDisabled + '>' +
+                '<input type="text" data-task-field="label" value="' + labelValue + '" maxlength="24" placeholder="タスク名"' + inputDisabled + '>' +
+                '<button type="button" class="button ghost small" data-action="remove-task"' + removeDisabled + '>削除</button>' +
+                '</li>'
+              );
+            })
+            .join('');
+        }
+        elements.taskManager.innerHTML = html;
+        elements.taskManager.classList.toggle('is-disabled', disabled);
+        if (elements.addTask) {
+          elements.addTask.disabled = disabled;
+        }
+      }
+      function changeCalendarMonth(offset) {
+        const current = startOfMonth(state.calendarMonth || new Date());
+        const next = new Date(current);
+        next.setMonth(current.getMonth() + offset);
+        state.calendarMonth = startOfMonth(next);
+        renderCalendar();
+      }
+
+      function handleCalendarClick(event) {
+        const target = event.target.closest('[data-calendar-date]');
+        if (!target) return;
+        const iso = target.getAttribute('data-calendar-date');
+        if (!iso) return;
+        const date = parseISO(iso);
+        const weekStart = startOfWeek(date);
+        const baseWeek = startOfWeek(new Date());
+        const diffMs = weekStart.getTime() - baseWeek.getTime();
+        const offset = Math.round(diffMs / (7 * 24 * 60 * 60 * 1000));
+        goToWeek(offset);
+      }
+
+      function renderCalendar() {
+        if (!elements.calendarGrid) return;
+        const month = startOfMonth(state.calendarMonth || new Date());
+        state.calendarMonth = month;
+        if (elements.calendarLabel) {
+          elements.calendarLabel.textContent = formatMonthLabel(month);
+        }
+        calendarWeekCache.clear();
+
+        const firstGrid = new Date(month);
+        firstGrid.setDate(month.getDate() - month.getDay());
+        const todayIso = toISO(new Date());
+        const activeWeekIso = toISO(state.weekStart);
+        let html = '';
+        for (let i = 0; i < 42; i += 1) {
+          const cellDate = new Date(firstGrid);
+          cellDate.setDate(firstGrid.getDate() + i);
+          const cellIso = toISO(cellDate);
+          const summary = getCalendarDaySummary(cellDate);
+          const isCurrentMonth = cellDate.getMonth() === month.getMonth();
+          const weekIso = toISO(startOfWeek(cellDate));
+          const isActiveWeek = weekIso === activeWeekIso;
+          const isToday = cellIso === todayIso;
+
+          let className = 'calendar-cell';
+          if (!isCurrentMonth) className += ' calendar-cell--muted';
+          if (isActiveWeek) className += ' calendar-cell--active-week';
+          if (isToday) className += ' calendar-cell--today';
+          if (!isCurrentMonth && summary.total === 0) {
+            className += ' calendar-cell--inactive';
+          }
+
+          const percent = summary.total ? Math.round((summary.done / summary.total) * 100) : 0;
+          const progressLabel = summary.total ? 'スター ' + summary.done + ' / ' + summary.total : 'スター 0 / 0';
+          const progressBar = '<div class="calendar-progress-bar"><span style="width: ' + percent + '%"></span></div>';
+          const ariaLabel = escapeHtml(formatJapaneseDate(cellDate) + ' ' + progressLabel);
+
+          html += '<button type="button" class="' + className + '" data-calendar-date="' + cellIso + '" aria-label="' + ariaLabel + '">';
+          html += '<span class="calendar-cell__date">' + cellDate.getDate() + '</span>';
+          html += progressBar;
+          html += '<span class="calendar-cell__progress">' + progressLabel + '</span>';
+          html += '</button>';
+        }
+        elements.calendarGrid.innerHTML = html;
+      }
+
+      function getCalendarDaySummary(date) {
+        const weekData = getWeekDataForDate(date);
+        if (!weekData) return { done: 0, total: 0 };
+        const iso = toISO(date);
+        const dayEntry = weekData.days.find((entry) => entry.dateISO === iso);
+        if (!dayEntry) return { done: 0, total: 0 };
+        let done = 0;
+        let total = 0;
+        Object.values(dayEntry.slots || {}).forEach((slotList) => {
+          (slotList || []).forEach((slot) => {
+            if (slot && slot.taskId) {
+              total += 1;
+              if (slot.status === 'done') {
+                done += 1;
+              }
+            }
+          });
+        });
+        return { done, total };
+      }
+
+      function getWeekDataForDate(date) {
+        const weekStart = startOfWeek(date);
+        const weekKey = buildWeekKey(weekStart);
+        if (weekKey === state.weekKey && state.weekData) {
+          return state.weekData;
+        }
+        if (calendarWeekCache.has(weekKey)) {
+          return calendarWeekCache.get(weekKey);
+        }
+        const data = loadWeekData(weekKey, weekStart);
+        calendarWeekCache.set(weekKey, data);
+        return data;
+      }
+
+      function formatMonthLabel(date) {
+        return date.getFullYear() + '年' + (date.getMonth() + 1) + '月';
+      }
+      function handleKidManagerChange(event) {
+        if (!state.editMode) return;
+        const field = event.target.getAttribute('data-kid-field');
+        if (!field) return;
+        const row = event.target.closest('[data-kid-id]');
+        if (!row) return;
+        const kidId = row.getAttribute('data-kid-id');
+        const kid = kids.find((item) => item.id === kidId);
+        if (!kid) return;
+        if (field === 'name') {
+          const index = kids.indexOf(kid);
+          const fallback = 'キッズ' + (index + 1);
+          kid.name = limitText(event.target.value || '', 16, fallback) || fallback;
+        } else if (field === 'color') {
+          const value = event.target.value;
+          if (validateColor(value)) {
+            kid.color = value;
+          }
+        }
+        saveConfig();
+        render();
+      }
+
+      function handleKidManagerClick(event) {
+        if (!state.editMode) return;
+        const action = event.target.getAttribute('data-action');
+        if (action !== 'remove-kid') return;
+        const row = event.target.closest('[data-kid-id]');
+        if (!row) return;
+        removeKid(row.getAttribute('data-kid-id'));
+      }
+
+      function handleTaskManagerChange(event) {
+        if (!state.editMode) return;
+        const field = event.target.getAttribute('data-task-field');
+        if (!field) return;
+        const row = event.target.closest('[data-task-id]');
+        if (!row) return;
+        const taskId = row.getAttribute('data-task-id');
+        const task = tasks.find((item) => item.id === taskId);
+        if (!task) return;
+        if (field === 'label') {
+          task.label = limitText(event.target.value || '', 24, '新しいタスク');
+        } else if (field === 'icon') {
+          task.icon = limitText(event.target.value || '⭐', 2, '⭐') || '⭐';
+        }
+        refreshTaskLookup();
+        saveConfig();
+        render();
+      }
+
+      function handleTaskManagerClick(event) {
+        if (!state.editMode) return;
+        const action = event.target.getAttribute('data-action');
+        if (action !== 'remove-task') return;
+        const row = event.target.closest('[data-task-id]');
+        if (!row) return;
+        removeTask(row.getAttribute('data-task-id'));
+      }
+
+      function handleControlAssign() {
+        ensureControlSelectionValid();
+        if (!state.weekData) return;
+        if (!state.editMode) {
+          state.editMode = true;
+        }
+        const taskId = elements.controlTask ? elements.controlTask.value : '';
+        if (taskId && !validTaskIds.has(taskId)) {
+          alert('選択したタスクが見つかりません。');
+          return;
+        }
+        const { dayIndex, kidId, slotIndex } = state.controlSelection;
+        if (!assignSlot(dayIndex, kidId, slotIndex, taskId || null)) {
+          alert('スロットの更新に失敗しました。');
+          return;
+        }
+        saveWeekData();
+        render();
+      }
+
+      function handleControlClearSlot() {
+        ensureControlSelectionValid();
+        if (!state.weekData) return;
+        if (!state.editMode) {
+          state.editMode = true;
+        }
+        const { dayIndex, kidId, slotIndex } = state.controlSelection;
+        if (!assignSlot(dayIndex, kidId, slotIndex, null)) {
+          return;
+        }
+        saveWeekData();
+        render();
+      }
+
+      function handleControlClearDay() {
+        ensureControlSelectionValid();
+        if (!state.weekData) return;
+        if (!state.editMode) {
+          state.editMode = true;
+        }
+        const { dayIndex } = state.controlSelection;
+        if (!confirm('選択した日のタスクをすべてリセットしますか？')) return;
+        clearDay(dayIndex);
+        saveWeekData();
+        render();
+      }
+
+      function handleControlCopyPrev() {
+        ensureControlSelectionValid();
+        if (!state.weekData) return;
+        if (!state.editMode) {
+          state.editMode = true;
+        }
+        const { dayIndex } = state.controlSelection;
+        if (dayIndex === 0) return;
+        copyDay(dayIndex - 1, dayIndex);
+        saveWeekData();
+        render();
+      }
+
+      function handleControlAutoFill() {
+        ensureControlSelectionValid();
+        if (!state.weekData) return;
+        if (!tasks.length) {
+          alert('タスクリストが空です。');
+          return;
+        }
+        if (!state.editMode) {
+          state.editMode = true;
+        }
+        const { dayIndex } = state.controlSelection;
+        autoFillDay(dayIndex);
+        saveWeekData();
+        render();
+      }
+
+      function addKid() {
+        const index = kids.length;
+        const newKid = {
+          id: generateId('kid'),
+          name: 'キッズ' + (index + 1),
+          color: DEFAULT_KID_COLORS[index % DEFAULT_KID_COLORS.length]
+        };
+        kids.push(newKid);
+        state.controlSelection.kidId = newKid.id;
+        saveConfig();
+        render();
+      }
+
+      function removeKid(kidId) {
+        if (kids.length <= 1) {
+          alert('子どもは最低 1 人必要です。');
+          return;
+        }
+        if (!confirm('この子どもをリストから削除しますか？')) return;
+        kids = kids.filter((kid) => kid.id !== kidId);
+        if (state.controlSelection.kidId === kidId) {
+          state.controlSelection.kidId = kids.length ? kids[0].id : '';
+        }
+        saveConfig();
+        render();
+      }
+
+      function addTask() {
+        const newTask = {
+          id: generateId('task'),
+          label: '新しいタスク' + (tasks.length + 1),
+          icon: '⭐'
+        };
+        tasks.push(newTask);
+        refreshTaskLookup();
+        state.controlSelection.taskId = newTask.id;
+        saveConfig();
+        render();
+      }
+
+      function removeTask(taskId) {
+        if (tasks.length <= 1) {
+          alert('タスクは最低 1 件必要です。');
+          return;
+        }
+        if (!confirm('このタスクを削除しますか？')) return;
+        tasks = tasks.filter((task) => task.id !== taskId);
+        refreshTaskLookup();
+        saveConfig();
+        render();
+      }
+      function cycleStatus(dayIndex, kidId, slotIndex) {
+        const slot = getSlot(dayIndex, kidId, slotIndex);
+        if (!slot || !slot.taskId) return;
+        const currentIndex = STATUS_SEQUENCE.indexOf(slot.status);
+        const nextIndex = currentIndex >= 0 ? (currentIndex + 1) % STATUS_SEQUENCE.length : 0;
+        slot.status = STATUS_SEQUENCE[nextIndex];
+        saveWeekData();
+        render();
+      }
+
+      function handleTaskChange(dayIndex, kidId, slotIndex, newTaskId) {
+        const slot = getSlot(dayIndex, kidId, slotIndex);
+        if (!slot) return;
+        const taskId = validTaskIds.has(newTaskId) ? newTaskId : null;
+        slot.taskId = taskId;
+        slot.status = taskId ? 'todo' : 'unset';
+        if (
+          state.controlSelection.dayIndex === dayIndex &&
+          state.controlSelection.kidId === kidId &&
+          state.controlSelection.slotIndex === slotIndex
+        ) {
+          state.controlSelection.taskId = taskId || '';
+        }
+        saveWeekData();
+        render();
+      }
+
+      function summarizeDay(day) {
+        return kids.reduce(
+          (acc, kid) => {
+            const slots = day.slots[kid.id] || [];
+            slots.forEach((slot) => {
+              if (slot.taskId) {
+                acc.total += 1;
+                if (slot.status === 'done') {
+                  acc.done += 1;
+                }
+              }
+            });
+            return acc;
+          },
+          { done: 0, total: 0 }
+        );
+      }
+
+      function summarizeWeek() {
+        return state.weekData.days.reduce(
+          (acc, day) => {
+            const daily = summarizeDay(day);
+            acc.done += daily.done;
+            acc.total += daily.total;
+            return acc;
+          },
+          { done: 0, total: 0 }
+        );
+      }
+
+      function saveWeekData() {
+        if (!storageAvailable || !state.weekData) return;
+        try {
+          localStorage.setItem(STORAGE_PREFIX + state.weekKey, JSON.stringify(state.weekData));
+        } catch (error) {
+          console.warn('ローカルストレージに保存できませんでした。', error);
+        }
+      }
+
+      function loadWeekData(weekKey, weekStart) {
+        const baseline = createEmptyWeekData(weekStart);
+        if (!storageAvailable) return baseline;
+
+        try {
+          const raw = localStorage.getItem(STORAGE_PREFIX + weekKey);
+          if (!raw) return baseline;
+          const payload = JSON.parse(raw);
+          if (!payload || !Array.isArray(payload.days)) return baseline;
+
+          baseline.days.forEach((day) => {
+            const storedDay = payload.days.find((item) => item && item.dateISO === day.dateISO);
+            if (!storedDay || typeof storedDay !== 'object') return;
+            kids.forEach((kid) => {
+              const storedSlots = storedDay.slots && Array.isArray(storedDay.slots[kid.id]) ? storedDay.slots[kid.id] : [];
+              day.slots[kid.id] = day.slots[kid.id].map((emptySlot, index) => {
+                const source = storedSlots[index];
+                if (!source || typeof source !== 'object') {
+                  return emptySlot;
+                }
+                const taskId = typeof source.taskId === 'string' && validTaskIds.has(source.taskId) ? source.taskId : null;
+                const status = STATUS_SEQUENCE.includes(source.status) ? source.status : 'unset';
+                return {
+                  taskId,
+                  status: taskId ? status : 'unset'
+                };
+              });
+            });
+          });
+
+          return baseline;
+        } catch (error) {
+          console.warn('保存データの読み込みに失敗しました。', error);
+          return baseline;
+        }
+      }
+
+      function createEmptyWeekData(weekStart) {
+        return {
+          days: Array.from({ length: 7 }, (_, offset) => {
+            const date = new Date(weekStart);
+            date.setDate(date.getDate() + offset);
+            const slots = {};
+            kids.forEach((kid) => {
+              slots[kid.id] = Array.from({ length: SLOTS_PER_KID }, () => ({
+                taskId: null,
+                status: 'unset'
+              }));
+            });
+            return {
+              dateISO: toISO(date),
+              slots
+            };
+          })
+        };
+      }
+
+      function syncWeekDataWithKids() {
+        if (!state.weekData) return false;
+        let changed = false;
+        const kidIds = new Set(kids.map((kid) => kid.id));
+        state.weekData.days.forEach((day) => {
+          kids.forEach((kid) => {
+            if (!Array.isArray(day.slots[kid.id])) {
+              day.slots[kid.id] = Array.from({ length: SLOTS_PER_KID }, () => ({
+                taskId: null,
+                status: 'unset'
+              }));
+              changed = true;
+            }
+          });
+          Object.keys(day.slots).forEach((kidId) => {
+            if (!kidIds.has(kidId)) {
+              delete day.slots[kidId];
+              changed = true;
+            }
+          });
+        });
+        ensureControlSelectionValid();
+        return changed;
+      }
+
+      function cleanupSlotsForMissingTasks() {
+        if (!state.weekData) return false;
+        let touched = false;
+        state.weekData.days.forEach((day) => {
+          Object.keys(day.slots).forEach((kidId) => {
+            day.slots[kidId] = day.slots[kidId].map((slot) => {
+              if (slot.taskId && !validTaskIds.has(slot.taskId)) {
+                touched = true;
+                return { taskId: null, status: 'unset' };
+              }
+              return slot;
+            });
+          });
+        });
+        if (state.controlSelection.taskId && !validTaskIds.has(state.controlSelection.taskId)) {
+          state.controlSelection.taskId = '';
+        }
+        return touched;
+      }
+
+      function assignSlot(dayIndex, kidId, slotIndex, taskId) {
+        const slot = getSlot(dayIndex, kidId, slotIndex);
+        if (!slot) return false;
+        if (taskId && !validTaskIds.has(taskId)) return false;
+        slot.taskId = taskId;
+        slot.status = taskId ? 'todo' : 'unset';
+        return true;
+      }
+
+      function clearDay(dayIndex) {
+        if (!state.weekData) return;
+        const day = state.weekData.days[dayIndex];
+        if (!day) return;
+        kids.forEach((kid) => {
+          day.slots[kid.id] = day.slots[kid.id].map(() => ({
+            taskId: null,
+            status: 'unset'
+          }));
+        });
+      }
+
+      function copyDay(fromIndex, toIndex) {
+        if (!state.weekData) return;
+        const source = state.weekData.days[fromIndex];
+        const target = state.weekData.days[toIndex];
+        if (!source || !target) return;
+        kids.forEach((kid) => {
+          const sourceSlots = source.slots[kid.id] || [];
+          target.slots[kid.id] = target.slots[kid.id].map((slot, index) => {
+            const origin = sourceSlots[index];
+            if (!origin || !origin.taskId || !validTaskIds.has(origin.taskId)) {
+              return { taskId: null, status: 'unset' };
+            }
+            const status = STATUS_SEQUENCE.includes(origin.status) ? origin.status : 'todo';
+            return { taskId: origin.taskId, status };
+          });
+        });
+      }
+
+      function autoFillDay(dayIndex) {
+        if (!state.weekData) return;
+        const day = state.weekData.days[dayIndex];
+        if (!day) return;
+        if (!tasks.length) return;
+        let pointer = 0;
+        kids.forEach((kid) => {
+          day.slots[kid.id] = day.slots[kid.id].map((slot) => {
+            if (slot.taskId) {
+              return slot;
+            }
+            const task = tasks[pointer % tasks.length];
+            pointer += 1;
+            if (!task) {
+              return { taskId: null, status: 'unset' };
+            }
+            return { taskId: task.id, status: 'todo' };
+          });
+        });
+      }
+
+      function ensureControlSelectionValid() {
+        if (!state.weekData || !state.weekData.days.length) {
+          state.controlSelection.dayIndex = 0;
+          state.controlSelection.kidId = kids.length ? kids[0].id : '';
+          state.controlSelection.slotIndex = 0;
+          state.controlSelection.taskId = '';
+          return;
+        }
+        if (state.controlSelection.dayIndex < 0 || state.controlSelection.dayIndex >= state.weekData.days.length) {
+          state.controlSelection.dayIndex = 0;
+        }
+        if (!kids.some((kid) => kid.id === state.controlSelection.kidId)) {
+          state.controlSelection.kidId = kids.length ? kids[0].id : '';
+        }
+        if (state.controlSelection.slotIndex < 0 || state.controlSelection.slotIndex >= SLOTS_PER_KID) {
+          state.controlSelection.slotIndex = 0;
+        }
+        if (state.controlSelection.taskId && !validTaskIds.has(state.controlSelection.taskId)) {
+          state.controlSelection.taskId = '';
+        }
+      }
+
+      function getSlot(dayIndex, kidId, slotIndex) {
+        if (!state.weekData) return null;
+        const day = state.weekData.days[dayIndex];
+        if (!day) return null;
+        const slots = day.slots[kidId];
+        if (!slots) return null;
+        return slots[slotIndex] || null;
+      }
+
+      function refreshTaskLookup() {
+        taskMap = new Map(tasks.map((task) => [task.id, task]));
+        validTaskIds = new Set(taskMap.keys());
+      }
+
+      function loadConfig() {
+        if (!storageAvailable) return;
+        try {
+          const raw = localStorage.getItem(CONFIG_STORAGE_KEY);
+          if (!raw) return;
+          const payload = JSON.parse(raw);
+          if (payload && Array.isArray(payload.kids)) {
+            const normalizedKids = normalizeKids(payload.kids);
+            if (normalizedKids.length) {
+              kids = normalizedKids;
+            }
+          }
+          if (payload && Array.isArray(payload.tasks)) {
+            const normalizedTasks = normalizeTasks(payload.tasks);
+            if (normalizedTasks.length) {
+              tasks = normalizedTasks;
+            }
+          }
+        } catch (error) {
+          console.warn('設定データの読み込みに失敗しました。', error);
+        }
+      }
+
+      function saveConfig() {
+        if (!storageAvailable) return;
+        try {
+          const payload = {
+            kids,
+            tasks
+          };
+          localStorage.setItem(CONFIG_STORAGE_KEY, JSON.stringify(payload));
+        } catch (error) {
+          console.warn('設定データの保存に失敗しました。', error);
+        }
+      }
+
+      function normalizeKids(list) {
+        const seen = new Set();
+        const normalized = [];
+        list.forEach((kid, index) => {
+          const rawId = typeof kid.id === 'string' ? kid.id.trim() : '';
+          let id = rawId || generateId('kid');
+          if (seen.has(id)) {
+            id = generateId('kid');
+          }
+          seen.add(id);
+          const fallback = 'キッズ' + (index + 1);
+          const name = limitText(kid && kid.name ? kid.name : fallback, 16, fallback) || fallback;
+          const color = validateColor(kid && kid.color) ? kid.color : DEFAULT_KID_COLORS[index % DEFAULT_KID_COLORS.length];
+          normalized.push({ id, name, color });
+        });
+        return normalized;
+      }
+
+      function normalizeTasks(list) {
+        const seen = new Set();
+        const normalized = [];
+        list.forEach((task, index) => {
+          const rawId = typeof task.id === 'string' ? task.id.trim() : '';
+          let id = rawId || generateId('task');
+          if (seen.has(id)) {
+            id = generateId('task');
+          }
+          seen.add(id);
+          const labelFallback = 'タスク' + (index + 1);
+          const label = limitText(task && task.label ? task.label : labelFallback, 24, labelFallback) || labelFallback;
+          const icon = limitText(task && task.icon ? task.icon : '⭐', 2, '⭐') || '⭐';
+          normalized.push({ id, label, icon });
+        });
+        return normalized.length ? normalized : tasks;
+      }
+
+      function limitText(value, maxLength, fallback) {
+        const trimmed = (value || '').toString().trim();
+        if (!trimmed) return fallback || '';
+        return Array.from(trimmed).slice(0, maxLength).join('');
+      }
+
+      function validateColor(value) {
+        return typeof value === 'string' && /^#[0-9a-fA-F]{6}$/.test(value);
+      }
+
+      function generateId(prefix) {
+        return prefix + '-' + Math.random().toString(36).slice(2, 8) + '-' + Date.now().toString(36);
+      }
+
+      function escapeHtml(value) {
+        return String(value || '')
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#39;');
+      }
+
+      function startOfMonth(date) {
+        const base = new Date(date);
+        base.setDate(1);
+        base.setHours(0, 0, 0, 0);
+        return base;
+      }
+
+      function startOfWeek(date) {
+        const base = new Date(date);
+        base.setHours(0, 0, 0, 0);
+        const day = base.getDay();
+        const diff = day === 0 ? -6 : 1 - day;
+        base.setDate(base.getDate() + diff);
+        return base;
+      }
+
+      function buildWeekKey(weekStart) {
+        return toISO(weekStart);
+      }
+
+      function toISO(date) {
+        const copy = new Date(date);
+        copy.setHours(0, 0, 0, 0);
+        return copy.toISOString().slice(0, 10);
+      }
+
+      function parseISO(isoString) {
+        const [y, m, d] = isoString.split('-').map(Number);
+        const date = new Date(y, m - 1, d);
+        date.setHours(0, 0, 0, 0);
+        return date;
+      }
+
+      function formatShortDate(date) {
+        return (date.getMonth() + 1) + '月' + date.getDate() + '日';
+      }
+
+      function formatJapaneseDate(date) {
+        return date.getFullYear() + '年' + (date.getMonth() + 1) + '月' + date.getDate() + '日（' + DAY_NAMES[date.getDay()] + '）';
+      }
+    })();
+  </script>
 </body>
 </html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
