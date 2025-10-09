@@ -1,4 +1,4 @@
-*
-!.gitignore
-!index.html
-!styles.css
+node_modules/
+dist/
+.env
+.vscode/
