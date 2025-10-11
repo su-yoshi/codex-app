@@ -1,0 +1,23 @@
+{
+  "name": "お手伝いウィークリープランナー",
+  "short_name": "ウィークプラン",
+  "description": "家族のお手伝いタスクを1週間単位で計画・管理できるプランナーです。",
+  "lang": "ja",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#5b6be5",
+  "theme_color": "#3841c4",
+  "icons": [
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

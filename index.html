@@ -3,7 +3,12 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#3841c4">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
   <title>お手伝いウィークリープランナー</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" sizes="180x180" href="icons/icon-192.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;600;700&family=Poppins:wght@500;600&display=swap" rel="stylesheet">
@@ -202,6 +207,44 @@
       justify-content: space-between;
       gap: 16px;
       flex-wrap: wrap;
+    }
+
+    .control-panel__heading {
+      flex: 1 1 320px;
+      min-width: 220px;
+    }
+
+    .control-panel__header-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      align-items: flex-end;
+    }
+
+    .control-collapse {
+      align-self: flex-end;
+      white-space: nowrap;
+    }
+
+    .control-panel__body {
+      display: grid;
+      gap: 24px;
+    }
+
+    .control-panel[data-collapsed="true"] {
+      gap: 18px;
+    }
+
+    .control-panel[data-collapsed="true"] .control-panel__body {
+      display: none;
+    }
+
+    .control-panel[data-collapsed="true"] .control-collapse {
+      background: rgba(91, 107, 229, 0.12);
+    }
+
+    .control-panel[data-collapsed="true"] .control-collapse:hover {
+      background: rgba(91, 107, 229, 0.2);
     }
 
     .control-panel__eyebrow {
@@ -845,14 +888,39 @@
       display: inline-flex;
       align-items: center;
       gap: 10px;
-      padding: 10px 16px;
+      padding: 10px 18px;
       border-radius: 999px;
-      background: rgba(255, 255, 255, 0.86);
-      border: 1px solid rgba(91, 107, 229, 0.18);
+      background: rgba(255, 255, 255, 0.9);
+      border: 1px solid rgba(91, 107, 229, 0.2);
       box-shadow: 0 10px 22px rgba(91, 107, 229, 0.12);
       font-size: 0.9rem;
       font-weight: 500;
       color: var(--text);
+      cursor: pointer;
+      font-family: inherit;
+      transition: var(--transition), transform 0.2s ease;
+    }
+
+    .task-pill:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+
+    .task-pill:hover:not(:disabled),
+    .task-pill:focus-visible:not(:disabled) {
+      transform: translateY(-1px);
+      box-shadow: 0 16px 32px rgba(91, 107, 229, 0.18);
+    }
+
+    .task-pill:focus-visible {
+      outline: 3px solid rgba(91, 107, 229, 0.3);
+      outline-offset: 2px;
+    }
+
+    .task-pill.is-selected {
+      border-color: var(--accent-strong);
+      box-shadow: 0 0 0 3px rgba(91, 107, 229, 0.24);
     }
 
     .task-pill__icon {
@@ -1013,7 +1081,22 @@
       display: flex;
       gap: 12px;
       flex-wrap: wrap;
-      justify-content: flex-end;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .footer-actions__group {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .footer-note {
+      margin: 8px 0 0;
+      font-size: 0.78rem;
+      color: rgba(31, 38, 64, 0.6);
+      text-align: right;
     }
 
     @media (max-width: 720px) {
@@ -1046,6 +1129,25 @@
       .control-form-grid {
         grid-template-columns: 1fr;
       }
+
+      .control-panel__header-actions {
+        width: 100%;
+        align-items: flex-start;
+      }
+
+      .control-collapse {
+        align-self: flex-start;
+      }
+
+      .footer-actions {
+        justify-content: flex-start;
+        align-items: flex-start;
+      }
+
+      .footer-note {
+        text-align: left;
+      }
+
 
       .manager-item.kid,
       .manager-item.task {
@@ -1095,18 +1197,22 @@
     <div class="layout">
       <section id="editControlPanel" class="control-panel" aria-label="編集コントロールセンター">
         <div class="control-panel__header">
-          <div>
+          <div class="control-panel__heading">
             <p class="control-panel__eyebrow">EDITING WORKSPACE</p>
             <h2 class="control-panel__title">編集コントロールセンター</h2>
             <p class="control-panel__text">曜日・子ども・スロットを選んで素早くタスクを割り当てたり、日全体をまとめて調整できます。スマホでも片手で操作できるように設計しています。</p>
           </div>
-          <div class="control-panel__toggle">
+          <div class="control-panel__header-actions">
+            <button id="controlCollapse" class="button ghost small control-collapse" type="button" aria-expanded="true" aria-controls="controlPanelBody">パネルを折りたたむ</button>
+            <div class="control-panel__toggle">
             <button id="editToggle" class="button primary" type="button">編集モードをオン</button>
             <p id="editToggleHint" class="control-panel__quick-hint">必要なときにオンにして編集します。</p>
+            </div>
           </div>
         </div>
 
-        <div class="control-panel__form">
+        <div id="controlPanelBody" class="control-panel__body" aria-hidden="false">
+          <div class="control-panel__form">
           <div class="control-form-grid">
             <div class="control-field">
               <label for="controlDay">曜日</label>
@@ -1154,6 +1260,7 @@
               <ul id="taskManager" class="manager-list manager-list--task"></ul>
             </div>
           </div>
+        </div>
         </div>
       </section>
 
@@ -1230,8 +1337,14 @@
 
     <footer class="site-footer">
       <div class="footer-actions">
+        <div class="footer-actions__group">
+          <button id="exportData" class="button secondary" type="button">バックアップを書き出す</button>
+          <button id="importData" class="button ghost" type="button">バックアップを読み込む</button>
+          <input id="importFile" type="file" accept="application/json" hidden aria-hidden="true">
+        </div>
         <button id="resetAll" class="button danger" type="button">今週のデータをリセット</button>
       </div>
+      <p id="footerNote" class="footer-note">バックアップは JSON 形式で保存され、この端末のブラウザーに保存されたデータをまとめて管理できます。</p>
     </footer>
   </div>
 
@@ -1248,6 +1361,8 @@
       const CONFIG_STORAGE_KEY = 'kids-week-planner-config-v1';
       const DAY_NAMES = ['日', '月', '火', '水', '木', '金', '土'];
       const DEFAULT_KID_COLORS = ['#5b6be5', '#f97316', '#22c55e', '#ec4899', '#14b8a6', '#6366f1'];
+      const BACKUP_ID = 'kids-week-planner';
+      const BACKUP_VERSION = '1.0.0';
 
       let kids = [
         { id: 'kid-hikari', name: 'ひかり', color: '#5b6be5' },
@@ -1286,6 +1401,7 @@ const storageAvailable = (() => {
       const state = {
         weekOffset: 0,
         editMode: false,
+        controlCollapsed: false,
         weekStart: startOfWeek(new Date()),
         weekKey: '',
         weekData: null,
@@ -1314,6 +1430,8 @@ const storageAvailable = (() => {
         editModeHint: document.getElementById('editModeHint'),
         editBanner: document.getElementById('editBanner'),
         controlPanel: document.getElementById('editControlPanel'),
+        controlPanelBody: document.getElementById('controlPanelBody'),
+        controlCollapse: document.getElementById('controlCollapse'),
         controlDay: document.getElementById('controlDay'),
         controlKid: document.getElementById('controlKid'),
         controlSlot: document.getElementById('controlSlot'),
@@ -1329,7 +1447,11 @@ const storageAvailable = (() => {
         taskManager: document.getElementById('taskManager'),
         addTask: document.getElementById('addTask'),
         resetAll: document.getElementById('resetAll'),
-        taskLibrary: document.getElementById('taskLibrary')
+        taskLibrary: document.getElementById('taskLibrary'),
+        exportData: document.getElementById('exportData'),
+        importData: document.getElementById('importData'),
+        importFile: document.getElementById('importFile'),
+        footerNote: document.getElementById('footerNote')
       };
       init();
 
@@ -1375,7 +1497,11 @@ const storageAvailable = (() => {
 
         if (elements.editToggle) {
           elements.editToggle.addEventListener('click', () => {
-            state.editMode = !state.editMode;
+            const next = !state.editMode;
+            state.editMode = next;
+            if (next && state.controlCollapsed) {
+              state.controlCollapsed = false;
+            }
             render();
           });
         }
@@ -1462,9 +1588,7 @@ const storageAvailable = (() => {
 
         if (elements.addKid) {
           elements.addKid.addEventListener('click', () => {
-            if (!state.editMode) {
-              state.editMode = true;
-            }
+            activateEditMode();
             addKid();
           });
         }
@@ -1476,9 +1600,7 @@ const storageAvailable = (() => {
 
         if (elements.addTask) {
           elements.addTask.addEventListener('click', () => {
-            if (!state.editMode) {
-              state.editMode = true;
-            }
+            activateEditMode();
             addTask();
           });
         }
@@ -1487,14 +1609,43 @@ const storageAvailable = (() => {
           elements.taskManager.addEventListener('change', handleTaskManagerChange);
           elements.taskManager.addEventListener('click', handleTaskManagerClick);
         }
+
+        if (elements.taskLibrary) {
+          elements.taskLibrary.addEventListener('click', handleTaskLibraryClick);
+        }
+
+        if (elements.exportData) {
+          elements.exportData.addEventListener('click', handleBackupExport);
+        }
+
+        if (elements.importData) {
+          elements.importData.addEventListener('click', triggerBackupImport);
+        }
+
+        if (elements.importFile) {
+          elements.importFile.addEventListener('change', handleBackupFileChange);
+        }
+        if (elements.controlCollapse) {
+          elements.controlCollapse.addEventListener('click', () => {
+            state.controlCollapsed = !state.controlCollapsed;
+            updateControlPanelCollapse();
+          });
+        }
       }
 
       function renderTaskLibrary() {
         if (!elements.taskLibrary) return;
         elements.taskLibrary.innerHTML = '';
         tasks.forEach((task) => {
-          const pill = document.createElement('div');
+          const pill = document.createElement('button');
+          pill.type = 'button';
           pill.className = 'task-pill';
+          pill.dataset.taskId = task.id;
+          pill.disabled = !state.editMode;
+          pill.setAttribute('aria-label', (task.icon || '⭐') + ' ' + task.label + ' を割り当てる');
+          if (state.controlSelection.taskId === task.id && state.editMode) {
+            pill.classList.add('is-selected');
+          }
           const iconSpan = document.createElement('span');
           iconSpan.className = 'task-pill__icon';
           iconSpan.textContent = task.icon || '⭐';
@@ -1504,6 +1655,22 @@ const storageAvailable = (() => {
           pill.appendChild(labelSpan);
           elements.taskLibrary.appendChild(pill);
         });
+      }
+
+      function handleTaskLibraryClick(event) {
+        const pill = event.target.closest('[data-task-id]');
+        if (!pill || pill.disabled) return;
+        const taskId = pill.getAttribute('data-task-id');
+        if (!taskId) return;
+        ensureControlSelectionValid();
+        const { dayIndex, kidId, slotIndex } = state.controlSelection;
+        if (!assignSlot(dayIndex, kidId, slotIndex, taskId)) {
+          alert('タスクの割り当てに失敗しました。');
+          return;
+        }
+        state.controlSelection.taskId = taskId;
+        saveWeekData();
+        render();
       }
 
       function setupControlPanel() {
@@ -1555,7 +1722,9 @@ const storageAvailable = (() => {
         updateSummary();
         updateEditState();
         updateControlPanel();
+        updateControlPanelCollapse();
         renderCalendar();
+        updateFooterControls();
         if (kidsSynced || tasksCleaned) {
           saveWeekData();
         }
@@ -1800,6 +1969,31 @@ const storageAvailable = (() => {
         updateControlPanelStatus();
       }
 
+      function updateControlPanelCollapse() {
+        if (!elements.controlPanel) return;
+        elements.controlPanel.setAttribute('data-collapsed', state.controlCollapsed ? 'true' : 'false');
+        if (elements.controlPanelBody) {
+          elements.controlPanelBody.setAttribute('aria-hidden', state.controlCollapsed ? 'true' : 'false');
+        }
+        if (elements.controlCollapse) {
+          elements.controlCollapse.setAttribute('aria-expanded', state.controlCollapsed ? 'false' : 'true');
+          elements.controlCollapse.textContent = state.controlCollapsed ? 'パネルを開く' : 'パネルを折りたたむ';
+        }
+      }
+
+      function activateEditMode() {
+        let changed = false;
+        if (!state.editMode) {
+          state.editMode = true;
+          changed = true;
+        }
+        if (state.controlCollapsed) {
+          state.controlCollapsed = false;
+          changed = true;
+        }
+        return changed;
+      }
+
       function populateControlDayOptions() {
         if (!elements.controlDay || !state.weekData) return;
         let options = '';
@@ -1989,6 +2183,171 @@ const storageAvailable = (() => {
         elements.calendarGrid.innerHTML = html;
       }
 
+      function updateFooterControls() {
+        if (elements.exportData) {
+          elements.exportData.disabled = !storageAvailable;
+        }
+        if (elements.importData) {
+          elements.importData.disabled = !storageAvailable;
+        }
+        if (elements.footerNote) {
+          elements.footerNote.textContent = storageAvailable
+            ? 'バックアップは JSON 形式で保存され、この端末のブラウザーに保存されたデータをまとめて管理できます。'
+            : 'ローカルストレージが利用できないため、バックアップ機能は使用できません。';
+        }
+      }
+
+      function handleBackupExport() {
+        if (!storageAvailable) {
+          alert('ローカルストレージが使えないためバックアップを作成できません。');
+          return;
+        }
+        try {
+          const payload = buildBackupPayload();
+          const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+          const url = URL.createObjectURL(blob);
+          const anchor = document.createElement('a');
+          anchor.href = url;
+          const now = new Date();
+          const stamp = [
+            now.getFullYear(),
+            ('0' + (now.getMonth() + 1)).slice(-2),
+            ('0' + now.getDate()).slice(-2),
+            ('0' + now.getHours()).slice(-2),
+            ('0' + now.getMinutes()).slice(-2)
+          ].join('');
+          anchor.download = 'kids-week-planner-backup-' + stamp + '.json';
+          document.body.appendChild(anchor);
+          anchor.click();
+          document.body.removeChild(anchor);
+          URL.revokeObjectURL(url);
+        } catch (error) {
+          console.error('バックアップの書き出しに失敗しました。', error);
+          alert('バックアップの書き出しに失敗しました。');
+        }
+      }
+
+      function triggerBackupImport() {
+        if (!storageAvailable) {
+          alert('ローカルストレージが使えないためバックアップを読み込めません。');
+          return;
+        }
+        if (!elements.importFile) return;
+        elements.importFile.value = '';
+        elements.importFile.click();
+      }
+
+      function handleBackupFileChange(event) {
+        if (!storageAvailable) return;
+        const input = event.target;
+        const file = input && input.files && input.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = () => {
+          try {
+            const payload = JSON.parse(String(reader.result));
+            applyBackupPayload(payload);
+            alert('バックアップを読み込みました。');
+          } catch (error) {
+            console.error('バックアップの読み込みに失敗しました。', error);
+            alert('バックアップの読み込みに失敗しました。ファイル内容をご確認ください。');
+          }
+        };
+        reader.readAsText(file, 'utf-8');
+      }
+
+      function buildBackupPayload() {
+        const payload = {
+          app: BACKUP_ID,
+          version: BACKUP_VERSION,
+          generatedAt: new Date().toISOString(),
+          activeWeek: state.weekKey || buildWeekKey(startOfWeek(new Date())),
+          config: {
+            kids: JSON.parse(JSON.stringify(kids)),
+            tasks: JSON.parse(JSON.stringify(tasks))
+          },
+          weeks: {}
+        };
+        if (storageAvailable) {
+          for (let index = 0; index < localStorage.length; index += 1) {
+            const key = localStorage.key(index);
+            if (!key || !key.startsWith(STORAGE_PREFIX)) continue;
+            try {
+              const stored = JSON.parse(localStorage.getItem(key));
+              if (stored && typeof stored === 'object' && Array.isArray(stored.days)) {
+                payload.weeks[key.slice(STORAGE_PREFIX.length)] = stored;
+              }
+            } catch (error) {
+              console.warn('バックアップ対象の週データを読み込みできませんでした:', key, error);
+            }
+          }
+        }
+        if (state.weekKey && state.weekData && !payload.weeks[state.weekKey]) {
+          payload.weeks[state.weekKey] = JSON.parse(JSON.stringify(state.weekData));
+        }
+        return payload;
+      }
+
+      function applyBackupPayload(payload) {
+        if (!payload || typeof payload !== 'object') {
+          throw new Error('バックアップの形式が正しくありません。');
+        }
+        if (payload.app && payload.app !== BACKUP_ID) {
+          throw new Error('別のアプリのバックアップファイルです。');
+        }
+        const config = payload.config || {};
+        const importedKids = Array.isArray(config.kids) ? normalizeKids(config.kids) : [];
+        const importedTasks = Array.isArray(config.tasks) ? normalizeTasks(config.tasks) : [];
+        if (!importedKids.length) {
+          throw new Error('子どもリストが見つかりません。');
+        }
+        if (!importedTasks.length) {
+          throw new Error('タスクリストが見つかりません。');
+        }
+        kids = importedKids;
+        tasks = importedTasks;
+        refreshTaskLookup();
+
+        if (storageAvailable) {
+          clearStoredPlannerData();
+          saveConfig();
+          const weeks = payload.weeks;
+          if (weeks && typeof weeks === 'object') {
+            Object.keys(weeks).forEach((weekKey) => {
+              const weekData = weeks[weekKey];
+              if (!weekKey || !weekData || typeof weekData !== 'object') return;
+              try {
+                localStorage.setItem(STORAGE_PREFIX + weekKey, JSON.stringify(weekData));
+              } catch (error) {
+                console.warn('週データの保存に失敗しました:', weekKey, error);
+              }
+            });
+          }
+        }
+
+        calendarWeekCache.clear();
+        let targetWeek = typeof payload.activeWeek === 'string' ? payload.activeWeek : '';
+        if (!targetWeek) {
+          const weekKeys = payload.weeks && typeof payload.weeks === 'object' ? Object.keys(payload.weeks) : [];
+          targetWeek = weekKeys.length ? weekKeys[0] : buildWeekKey(startOfWeek(new Date()));
+        }
+        const weekDate = parseISO(targetWeek);
+        const baseWeek = startOfWeek(new Date());
+        const diffMs = weekDate.getTime() - baseWeek.getTime();
+        const offset = Math.round(diffMs / (7 * 24 * 60 * 60 * 1000));
+        goToWeek(offset);
+      }
+
+      function clearStoredPlannerData() {
+        for (let index = localStorage.length - 1; index >= 0; index -= 1) {
+          const key = localStorage.key(index);
+          if (!key) continue;
+          if (key === CONFIG_STORAGE_KEY || key.startsWith(STORAGE_PREFIX)) {
+            localStorage.removeItem(key);
+          }
+        }
+      }
+
       function getCalendarDaySummary(date) {
         const weekData = getWeekDataForDate(date);
         if (!weekData) return { done: 0, total: 0 };
@@ -2090,9 +2449,7 @@ const storageAvailable = (() => {
       function handleControlAssign() {
         ensureControlSelectionValid();
         if (!state.weekData) return;
-        if (!state.editMode) {
-          state.editMode = true;
-        }
+        activateEditMode();
         const taskId = elements.controlTask ? elements.controlTask.value : '';
         if (taskId && !validTaskIds.has(taskId)) {
           alert('選択したタスクが見つかりません。');
@@ -2110,9 +2467,7 @@ const storageAvailable = (() => {
       function handleControlClearSlot() {
         ensureControlSelectionValid();
         if (!state.weekData) return;
-        if (!state.editMode) {
-          state.editMode = true;
-        }
+        activateEditMode();
         const { dayIndex, kidId, slotIndex } = state.controlSelection;
         if (!assignSlot(dayIndex, kidId, slotIndex, null)) {
           return;
@@ -2124,9 +2479,7 @@ const storageAvailable = (() => {
       function handleControlClearDay() {
         ensureControlSelectionValid();
         if (!state.weekData) return;
-        if (!state.editMode) {
-          state.editMode = true;
-        }
+        activateEditMode();
         const { dayIndex } = state.controlSelection;
         if (!confirm('選択した日のタスクをすべてリセットしますか？')) return;
         clearDay(dayIndex);
@@ -2137,9 +2490,7 @@ const storageAvailable = (() => {
       function handleControlCopyPrev() {
         ensureControlSelectionValid();
         if (!state.weekData) return;
-        if (!state.editMode) {
-          state.editMode = true;
-        }
+        activateEditMode();
         const { dayIndex } = state.controlSelection;
         if (dayIndex === 0) return;
         copyDay(dayIndex - 1, dayIndex);
@@ -2154,9 +2505,7 @@ const storageAvailable = (() => {
           alert('タスクリストが空です。');
           return;
         }
-        if (!state.editMode) {
-          state.editMode = true;
-        }
+        activateEditMode();
         const { dayIndex } = state.controlSelection;
         autoFillDay(dayIndex);
         saveWeekData();
@@ -2615,28 +2964,17 @@ const storageAvailable = (() => {
       }
     })();
   </script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js').catch((error) => {
+          console.warn('Service worker registration failed.', error);
+        });
+      });
+    }
+  </script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
