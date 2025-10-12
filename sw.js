@@ -1,4 +1,4 @@
-const CACHE_NAME = 'kids-planner-cache-v1';
+const CACHE_NAME = 'kids-planner-cache-v2';
 const ASSETS = [
   './',
   './index.html',

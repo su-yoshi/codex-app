@@ -224,19 +224,32 @@
     .control-collapse {
       align-self: flex-end;
       white-space: nowrap;
+      font-weight: 600;
+      transition: background 0.2s ease, color 0.2s ease;
+    }
+
+    .control-collapse.is-collapsed {
+      color: var(--accent-strong);
     }
 
     .control-panel__body {
       display: grid;
       gap: 24px;
+      max-height: 9999px;
+      opacity: 1;
+      overflow: hidden;
+      transition: max-height 0.28s ease, opacity 0.2s ease;
     }
 
     .control-panel[data-collapsed="true"] {
-      gap: 18px;
+      gap: 16px;
+      padding-bottom: 18px;
     }
 
     .control-panel[data-collapsed="true"] .control-panel__body {
-      display: none;
+      max-height: 0;
+      opacity: 0;
+      pointer-events: none;
     }
 
     .control-panel[data-collapsed="true"] .control-collapse {
@@ -245,6 +258,10 @@
 
     .control-panel[data-collapsed="true"] .control-collapse:hover {
       background: rgba(91, 107, 229, 0.2);
+    }
+
+    .control-panel[data-collapsed="true"] .control-panel__toggle {
+      margin-top: 4px;
     }
 
     .control-panel__eyebrow {
@@ -1627,8 +1644,12 @@ const storageAvailable = (() => {
         }
         if (elements.controlCollapse) {
           elements.controlCollapse.addEventListener('click', () => {
-            state.controlCollapsed = !state.controlCollapsed;
+            const nextState = !state.controlCollapsed;
+            state.controlCollapsed = nextState;
             updateControlPanelCollapse();
+            if (!nextState && elements.controlPanelBody) {
+              elements.controlPanelBody.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
           });
         }
       }
@@ -1971,13 +1992,16 @@ const storageAvailable = (() => {
 
       function updateControlPanelCollapse() {
         if (!elements.controlPanel) return;
-        elements.controlPanel.setAttribute('data-collapsed', state.controlCollapsed ? 'true' : 'false');
+        const collapsed = !!state.controlCollapsed;
+        elements.controlPanel.setAttribute('data-collapsed', collapsed ? 'true' : 'false');
         if (elements.controlPanelBody) {
-          elements.controlPanelBody.setAttribute('aria-hidden', state.controlCollapsed ? 'true' : 'false');
+          elements.controlPanelBody.setAttribute('aria-hidden', collapsed ? 'true' : 'false');
         }
         if (elements.controlCollapse) {
-          elements.controlCollapse.setAttribute('aria-expanded', state.controlCollapsed ? 'false' : 'true');
-          elements.controlCollapse.textContent = state.controlCollapsed ? 'パネルを開く' : 'パネルを折りたたむ';
+          elements.controlCollapse.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+          elements.controlCollapse.setAttribute('aria-label', collapsed ? '編集パネルを開く' : '編集パネルを折りたたむ');
+          elements.controlCollapse.classList.toggle('is-collapsed', collapsed);
+          elements.controlCollapse.textContent = collapsed ? '▶ 編集パネルを開く' : '▼ パネルを折りたたむ';
         }
       }
 
@@ -1990,6 +2014,9 @@ const storageAvailable = (() => {
         if (state.controlCollapsed) {
           state.controlCollapsed = false;
           changed = true;
+        }
+        if (changed) {
+          updateControlPanelCollapse();
         }
         return changed;
       }
