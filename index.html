@@ -625,8 +625,36 @@
     .board-grid {
       display: grid;
       gap: 20px;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      grid-template-columns: minmax(0, 1fr);
+      max-width: 720px;
+      margin: 0 auto;
       align-items: stretch;
+    }
+
+    .board-empty {
+      padding: 32px;
+      border-radius: var(--radius-xl);
+      background: var(--panel-soft);
+      border: 1px dashed rgba(91, 107, 229, 0.35);
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.95rem;
+      line-height: 1.6;
+    }
+
+
+    @media (min-width: 960px) {
+      .kid-grid {
+        overflow-x: visible;
+        flex-wrap: wrap;
+        padding: 0;
+        scroll-snap-type: none;
+      }
+
+      .kid-block {
+        flex: 1 1 calc(33.333% - 16px);
+        min-width: 240px;
+      }
     }
 
     .day-card {
@@ -639,6 +667,11 @@
       min-height: 100%;
       overflow: hidden;
       transition: transform 0.25s ease, box-shadow 0.25s ease;
+    }
+
+    .day-card.day-card--active {
+      border-color: rgba(91, 107, 229, 0.45);
+      box-shadow: 0 0 0 3px rgba(91, 107, 229, 0.18);
     }
 
     .day-card:hover {
@@ -689,16 +722,23 @@
     }
 
     .kid-grid {
-      display: grid;
-      gap: 12px;
-      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      display: flex;
+      gap: 16px;
+      overflow-x: auto;
+      padding: 4px 6px 12px;
+      scroll-snap-type: x mandatory;
+      scroll-padding-left: 6px;
     }
 
-    @media (max-width: 540px) {
-      .kid-grid {
-        grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
-      }
+    .kid-grid::-webkit-scrollbar {
+      height: 6px;
     }
+
+    .kid-grid::-webkit-scrollbar-thumb {
+      background: rgba(91, 107, 229, 0.35);
+      border-radius: 999px;
+    }
+
 
     .kid-block {
       background: var(--panel-soft);
@@ -709,6 +749,8 @@
       flex-direction: column;
       gap: 12px;
       backdrop-filter: blur(4px);
+      flex: 0 0 260px;
+      scroll-snap-align: start;
     }
 
     .kid-block__header {
@@ -1212,6 +1254,30 @@
     </header>
 
     <div class="layout">
+      <section class="calendar-panel" aria-label="カレンダー">
+        <header class="calendar-header">
+          <div>
+            <h2>カレンダー</h2>
+            <p>月ごとのスター達成状況をひと目で確認できます</p>
+          </div>
+          <div class="calendar-nav">
+            <button type="button" data-calendar-nav="prev">←</button>
+            <span id="calendarLabel" class="calendar-label"></span>
+            <button type="button" data-calendar-nav="next">→</button>
+          </div>
+        </header>
+        <div class="calendar-weekdays">
+          <span>日</span>
+          <span>月</span>
+          <span>火</span>
+          <span>水</span>
+          <span>木</span>
+          <span>金</span>
+          <span>土</span>
+        </div>
+        <div id="calendarGrid" class="calendar-grid" aria-live="polite"></div>
+      </section>
+
       <section id="editControlPanel" class="control-panel" aria-label="編集コントロールセンター">
         <div class="control-panel__header">
           <div class="control-panel__heading">
@@ -1283,6 +1349,16 @@
 
       <div class="edit-banner" id="editBanner">編集モード中：プランを変更すると自動で保存されます。</div>
 
+      <section class="board" aria-label="週間プラン">
+        <header class="board-header">
+          <div>
+            <h2 id="boardTitle">選択中のプラン</h2>
+            <p id="boardSubtitle" class="board-sub">カレンダーで日付を選ぶと詳細が表示されます。</p>
+          </div>
+        </header>
+        <div id="cardsContainer" class="board-grid"></div>
+      </section>
+
       <section class="summary-grid" aria-label="週間サマリー">
         <article class="summary-card summary-card--hero">
           <p class="summary-eyebrow">WEEKLY SNAPSHOT</p>
@@ -1312,39 +1388,9 @@
         </article>
       </section>
 
-      <section class="board" aria-label="週間プラン">
-        <header class="board-header">
-          <div>
-            <h2>今週のプランカード</h2>
-            <p class="board-sub">1 人につき 3 件まで設定できます。家族会議で決めたミッションを割り当ててください。</p>
-          </div>
-        </header>
-        <div id="cardsContainer" class="board-grid"></div>
-      </section>
 
-      <section class="calendar-panel" aria-label="カレンダー">
-        <header class="calendar-header">
-          <div>
-            <h2>カレンダー</h2>
-            <p>月ごとのスター達成状況をひと目で確認できます</p>
-          </div>
-          <div class="calendar-nav">
-            <button type="button" data-calendar-nav="prev">←</button>
-            <span id="calendarLabel" class="calendar-label"></span>
-            <button type="button" data-calendar-nav="next">→</button>
-          </div>
-        </header>
-        <div class="calendar-weekdays">
-          <span>日</span>
-          <span>月</span>
-          <span>火</span>
-          <span>水</span>
-          <span>木</span>
-          <span>金</span>
-          <span>土</span>
-        </div>
-        <div id="calendarGrid" class="calendar-grid" aria-live="polite"></div>
-      </section>
+
+
       <section class="task-library" aria-label="タスクの候補">
         <h2>よく使うタスク</h2>
         <p class="task-library__hint">編集モードでカードをタップするとこのリストから選択できます。リスト自体も上の編集コントロールでカスタマイズできます。</p>
@@ -1440,6 +1486,8 @@ const storageAvailable = (() => {
         progressBar: document.getElementById('progressBar'),
         calendarLabel: document.getElementById('calendarLabel'),
         calendarGrid: document.getElementById('calendarGrid'),
+        boardTitle: document.getElementById('boardTitle'),
+        boardSubtitle: document.getElementById('boardSubtitle'),
         cardsContainer: document.getElementById('cardsContainer'),
         editToggle: document.getElementById('editToggle'),
         editToggleHint: document.getElementById('editToggleHint'),
@@ -1734,6 +1782,7 @@ const storageAvailable = (() => {
 
       function render() {
         if (!state.weekData) return;
+        ensureControlSelectionValid();
         renderTaskLibrary();
         setupControlPanel();
         const kidsSynced = syncWeekDataWithKids();
@@ -1760,9 +1809,37 @@ const storageAvailable = (() => {
       function renderCards() {
         if (!elements.cardsContainer || !state.weekData) return;
         elements.cardsContainer.innerHTML = '';
-        state.weekData.days.forEach((day, dayIndex) => {
-          elements.cardsContainer.appendChild(createDayCard(day, dayIndex));
-        });
+        ensureControlSelectionValid();
+        const selectedIndex = state.controlSelection.dayIndex;
+        const day = state.weekData.days[selectedIndex];
+        if (!day) {
+          updateBoardHeading(null);
+          elements.cardsContainer.appendChild(createBoardEmpty());
+          return;
+        }
+        updateBoardHeading(day);
+        elements.cardsContainer.appendChild(createDayCard(day, selectedIndex));
+      }
+
+      function createBoardEmpty() {
+        const empty = document.createElement('div');
+        empty.className = 'board-empty';
+        empty.textContent = '表示する日をカレンダーから選択してください。';
+        return empty;
+      }
+
+      function updateBoardHeading(day) {
+        if (elements.boardTitle) {
+          elements.boardTitle.textContent = day ? '選択中のプラン' : 'プランを選択してください';
+        }
+        if (elements.boardSubtitle) {
+          if (!day) {
+            elements.boardSubtitle.textContent = 'カレンダーで日付を選ぶと詳細が表示されます。';
+          } else {
+            const dayDate = parseISO(day.dateISO);
+            elements.boardSubtitle.textContent = formatJapaneseDate(dayDate) + ' の担当タスク';
+          }
+        }
       }
 
       function createDayCard(day, dayIndex) {
@@ -1770,6 +1847,9 @@ const storageAvailable = (() => {
         const summary = summarizeDay(day);
         const card = document.createElement('article');
         card.className = 'day-card';
+        if (state.controlSelection.dayIndex === dayIndex) {
+          card.classList.add('day-card--active');
+        }
 
         const header = document.createElement('header');
         header.className = 'day-card__header';
