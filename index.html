@@ -641,8 +641,91 @@
       font-size: 0.95rem;
       line-height: 1.6;
     }
+    .special-content {
+      margin-top: 40px;
+      background: var(--panel);
+      border-radius: var(--radius-xl);
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow-card);
+      padding: 32px 28px;
+      display: grid;
+      gap: 24px;
+    }
 
+    .special-content h2 {
+      margin: 0;
+      font-size: 1.3rem;
+      font-weight: 600;
+    }
 
+    .special-grid {
+      display: grid;
+      gap: 18px;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    }
+
+    .special-card {
+      background: var(--panel-strong);
+      border-radius: var(--radius-lg);
+      border: 1px solid rgba(91, 107, 229, 0.14);
+      padding: 18px 20px;
+      display: grid;
+      gap: 14px;
+      box-shadow: 0 12px 24px rgba(91, 107, 229, 0.12);
+    }
+
+    .special-card__title {
+      margin: 0;
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--accent-strong);
+    }
+
+    .special-card__body {
+      margin: 0;
+      font-size: 0.94rem;
+      line-height: 1.7;
+    }
+
+    .special-card__body--highlight {
+      font-weight: 600;
+      color: var(--accent-strong);
+      font-size: 1.03rem;
+    }
+
+    .special-card__note {
+      margin: 0;
+      font-size: 0.82rem;
+      color: var(--muted);
+    }
+
+    .special-meter {
+      display: grid;
+      gap: 8px;
+    }
+
+    .special-meter__track {
+      height: 10px;
+      background: rgba(91, 107, 229, 0.18);
+      border-radius: 999px;
+      overflow: hidden;
+    }
+
+    .special-meter__value {
+      height: 100%;
+      width: 0%;
+      background: var(--accent);
+      border-radius: inherit;
+      transition: width 0.3s ease;
+    }
+
+    .special-content[data-has-day="false"] .special-card__body {
+      color: rgba(31, 38, 64, 0.6);
+    }
+
+    .special-content[data-has-day="false"] .special-card__body--highlight {
+      color: rgba(31, 38, 64, 0.6);
+    }
     @media (min-width: 960px) {
       .kid-grid {
         overflow-x: visible;
@@ -1387,6 +1470,33 @@
           <p class="summary-text" id="editModeHint">タスクを組み替えるときは上のボタンで編集モードをオンにします。</p>
         </article>
       </section>
+      <section class="special-content" data-has-day="false" aria-label="スペシャルコンテンツ">
+        <h2>スペシャルコンテンツ</h2>
+        <div class="special-grid">
+          <article class="special-card">
+            <h3 class="special-card__title">今日の応援メッセージ</h3>
+            <p id="specialMessage" class="special-card__body">カレンダーで日付を選んで応援メッセージを受け取ろう！</p>
+            <p id="specialProgress" class="special-card__note"></p>
+          </article>
+          <article class="special-card special-card--meter">
+            <h3 class="special-card__title">スター・ポイントメーター</h3>
+            <p class="special-card__body">スター1つ = 1ポイント。ポイントを貯めてごほうびをゲットしよう！</p>
+            <div class="special-meter">
+              <div class="special-meter__track">
+                <div id="specialMeterBar" class="special-meter__value"></div>
+              </div>
+              <p id="specialMeterLabel" class="special-card__note"></p>
+            </div>
+            <p id="specialReward" class="special-card__body special-card__body--highlight"></p>
+            <p id="specialRewardHint" class="special-card__note"></p>
+          </article>
+          <article class="special-card">
+            <h3 class="special-card__title">ファミリーチャレンジ</h3>
+            <p id="specialChallenge" class="special-card__body">家族みんなでチャレンジを決めてみよう！</p>
+          </article>
+        </div>
+      </section>
+
 
 
 
@@ -1424,6 +1534,41 @@
       const CONFIG_STORAGE_KEY = 'kids-week-planner-config-v1';
       const DAY_NAMES = ['日', '月', '火', '水', '木', '金', '土'];
       const DEFAULT_KID_COLORS = ['#5b6be5', '#f97316', '#22c55e', '#ec4899', '#14b8a6', '#6366f1'];
+      const MOTIVATION_MESSAGES = [
+        'スター{starsDone}/{starsTotal}個達成！あと{remaining}個で今日のミッション完了だよ。家族に嬉しい報告をしよう！',
+        '進み具合は{progress}%！{emoji} ここで一息ついてからラストスパートに挑戦しよう。',
+        'スターが{starsDone}個集まったね。笑顔で「できた！」を増やしていこう！',
+        '今週は{weekProgress}%クリア。家族のヒーローまであと少し、頑張れ！',
+        '{emoji} 今日のチームワークに拍手！あと{remaining}個でボーナススターだよ。',
+        'スター{starsDone}/{starsTotal}個はすごい記録！水分補給をしてから次のタスクを選ぼう。',
+        '集中タイムはあとちょっと。達成率{progress}%だから、もうひと押しで金メダル級だよ！',
+        'お手伝いスーパースターの道は順調！家族に「ありがとう」をもらっちゃおう。'
+      ];
+      const REWARD_IDEAS = [
+        'スターが集まったら、お気に入りのドリンクでちょっとブレイク。',
+        '家族で“ありがとうポーズ”を決めて写真を撮ろう。',
+        '今夜のデザートを選ぶ権利をゲット！どれにしよう？',
+        '好きな音楽をかけて1曲ぶんダンス休憩。',
+        'スターボードにシールを貼って、小さなパーティを開こう。',
+        '明日の朝ごはんメニューを決めてみよう。スターの分だけトッピング追加！'
+      ];
+      const FAMILY_CHALLENGES = [
+        'お片付けタイムをタイマーで計って、家族みんなで新記録を目指そう！',
+        '夕飯のあとに “今日頑張ったこと” を1人ずつ発表して拍手を送ろう。',
+        '寝る前にスターの数だけ深呼吸をして、明日に向けてリラックスしよう。',
+        '土曜日はスター報告会！今日の頑張りを家族ノートに書き残そう。',
+        '「お手伝いありがとう券」を作って、家族に配ってみよう。',
+        '近いうちにミニパーティを計画！スターが貯まるたびにアイデアを1つ書き足そう。'
+      ];
+      const CELEBRATION_EMOJIS = ['🌟', '🎉', '💪', '🍀', '🚀', '🧡', '🎈', '✨'];
+
+      const REWARD_TIERS = [
+        { points: 0, title: 'スターを集めよう！', reward: 'ハイタッチとにっこりタイム', hint: 'ポイントが3ptになると第一のごほうびが登場！' },
+        { points: 3, title: '3ptごほうび', reward: '好きなおやつ or ドリンクを選べる', hint: 'あと2ptでスペシャルタイムが解放！' },
+        { points: 5, title: '5ptごほうび', reward: '家族とゲーム/読書などの選べる15分', hint: 'あと5ptで週末ミッションが発動！' },
+        { points: 10, title: '10ptごほうび', reward: '週末ミニパーティ or 好きなメニューを決定', hint: '達成したら次の目標を決めて再スタート！' }
+      ];
+
       const BACKUP_ID = 'kids-week-planner';
       const BACKUP_VERSION = '1.0.0';
 
@@ -1488,6 +1633,14 @@ const storageAvailable = (() => {
         calendarGrid: document.getElementById('calendarGrid'),
         boardTitle: document.getElementById('boardTitle'),
         boardSubtitle: document.getElementById('boardSubtitle'),
+        specialSection: document.querySelector('.special-content'),
+        specialMessage: document.getElementById('specialMessage'),
+        specialProgress: document.getElementById('specialProgress'),
+        specialReward: document.getElementById('specialReward'),
+        specialChallenge: document.getElementById('specialChallenge'),
+        specialMeterBar: document.getElementById('specialMeterBar'),
+        specialMeterLabel: document.getElementById('specialMeterLabel'),
+        specialRewardHint: document.getElementById('specialRewardHint'),
         cardsContainer: document.getElementById('cardsContainer'),
         editToggle: document.getElementById('editToggle'),
         editToggleHint: document.getElementById('editToggleHint'),
@@ -1814,10 +1967,12 @@ const storageAvailable = (() => {
         const day = state.weekData.days[selectedIndex];
         if (!day) {
           updateBoardHeading(null);
+          updateSpecialContent(null);
           elements.cardsContainer.appendChild(createBoardEmpty());
           return;
         }
         updateBoardHeading(day);
+        updateSpecialContent(day);
         elements.cardsContainer.appendChild(createDayCard(day, selectedIndex));
       }
 
@@ -1839,6 +1994,103 @@ const storageAvailable = (() => {
             const dayDate = parseISO(day.dateISO);
             elements.boardSubtitle.textContent = formatJapaneseDate(dayDate) + ' の担当タスク';
           }
+        }
+      }
+
+
+      function pickMotivation(list, seed, offset = 0) {
+        if (!Array.isArray(list) || !list.length) return '';
+        const index = Math.abs(Math.floor(seed + offset)) % list.length;
+        return list[index];
+      }
+
+      function formatTemplate(template, data) {
+        return (template || '').replace(/\{(\w+)\}/g, (_, key) => {
+          return Object.prototype.hasOwnProperty.call(data, key) ? data[key] : '';
+        });
+      }
+
+      function getRewardTier(points) {
+        if (!Array.isArray(REWARD_TIERS) || !REWARD_TIERS.length) {
+          return { points: 0, title: 'ごほうびを決めよう', reward: 'スターを集めて家族で相談しよう', hint: '' };
+        }
+        let current = REWARD_TIERS[0];
+        for (const tier of REWARD_TIERS) {
+          if (points >= tier.points) {
+            current = tier;
+          } else {
+            break;
+          }
+        }
+        return current;
+      }
+
+      function getNextRewardTier(points) {
+        if (!Array.isArray(REWARD_TIERS) || !REWARD_TIERS.length) return null;
+        for (const tier of REWARD_TIERS) {
+          if (points < tier.points) {
+            return tier;
+          }
+        }
+        return null;
+      }
+
+      function updateSpecialContent(day) {
+        if (!elements.specialSection) return;
+        const weekSummary = summarizeWeek();
+        const weekProgress = weekSummary.total ? Math.round((weekSummary.done / weekSummary.total) * 100) : 0;
+        const daySummary = day ? summarizeDay(day) : null;
+        const baseSeed = day ? parseISO(day.dateISO).getTime() : Date.now();
+        const emoji = pickMotivation(CELEBRATION_EMOJIS, baseSeed, 0);
+        const templateData = {
+          progress: daySummary && daySummary.total ? Math.round((daySummary.done / daySummary.total) * 100) : 0,
+          starsDone: daySummary ? daySummary.done : weekSummary.done,
+          starsTotal: daySummary ? daySummary.total : weekSummary.total,
+          remaining: daySummary && daySummary.total ? Math.max(daySummary.total - daySummary.done, 0) : Math.max(weekSummary.total - weekSummary.done, 0),
+          weekProgress,
+          emoji
+        };
+
+        if (!day) {
+          if (elements.specialSection) elements.specialSection.setAttribute('data-has-day', 'false');
+          if (elements.specialMessage) {
+            elements.specialMessage.textContent = 'カレンダーで日付を選ぶと、今日の応援メッセージが表示されます。';
+          }
+          if (elements.specialProgress) {
+            elements.specialProgress.textContent = weekSummary.total ? '今週のスター: ' + weekSummary.done + ' / ' + weekSummary.total + '（' + weekProgress + '% 達成）' : '今週のスター: 0 / 0';
+          }
+          if (elements.specialReward) {
+            const rewardTemplate = pickMotivation(REWARD_IDEAS, baseSeed, 1);
+            elements.specialReward.textContent = formatTemplate(rewardTemplate, templateData);
+          }
+          if (elements.specialChallenge) {
+            const challengeTemplate = pickMotivation(FAMILY_CHALLENGES, baseSeed, 2);
+            elements.specialChallenge.textContent = formatTemplate(challengeTemplate, templateData);
+          }
+          return;
+        }
+
+        if (elements.specialSection) elements.specialSection.setAttribute('data-has-day', 'true');
+
+        const messageTemplate = pickMotivation(MOTIVATION_MESSAGES, baseSeed, 0);
+        if (elements.specialMessage) {
+          elements.specialMessage.textContent = formatTemplate(messageTemplate, templateData);
+        }
+
+        if (elements.specialProgress) {
+          const dayText = '今日のスター: ' + daySummary.done + ' / ' + (daySummary.total || 0);
+          const weekText = '週合計: ' + weekSummary.done + ' / ' + (weekSummary.total || 0) + '（' + weekProgress + '%）';
+          elements.specialProgress.textContent = emoji + ' ' + dayText + ' ・ ' + weekText;
+        }
+
+        const rewardTemplate = pickMotivation(REWARD_IDEAS, baseSeed, 1);
+        if (elements.specialReward) {
+          elements.specialReward.textContent = formatTemplate(rewardTemplate, templateData);
+        }
+
+        const challengeTemplate = pickMotivation(FAMILY_CHALLENGES, baseSeed, 2);
+        if (elements.specialChallenge) {
+          elements.specialChallenge.textContent = formatTemplate(challengeTemplate, templateData);
         }
       }
 
