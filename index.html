@@ -1408,6 +1408,7 @@
             <button id="controlClearDay" class="button ghost" type="button">この日をリセット</button>
             <button id="controlCopyPrev" class="button secondary" type="button">前の日からコピー</button>
             <button id="controlAutoFill" class="button secondary" type="button">空き枠にタスクを自動配置</button>
+            <button id="controlAutoDistribute" class="button secondary" type="button">全体をバランス配置</button>
           </div>
 
           <div class="control-panel__manager">
@@ -1659,6 +1660,7 @@ const storageAvailable = (() => {
         controlClearDay: document.getElementById('controlClearDay'),
         controlCopyPrev: document.getElementById('controlCopyPrev'),
         controlAutoFill: document.getElementById('controlAutoFill'),
+        controlAutoDistribute: document.getElementById('controlAutoDistribute'),
         controlCurrentStatus: document.getElementById('controlCurrentStatus'),
         kidManager: document.getElementById('kidManager'),
         addKid: document.getElementById('addKid'),
@@ -1781,6 +1783,9 @@ const storageAvailable = (() => {
 
         if (elements.controlAutoFill) {
           elements.controlAutoFill.addEventListener('click', handleControlAutoFill);
+        }
+        if (elements.controlAutoDistribute) {
+          elements.controlAutoDistribute.addEventListener('click', handleControlAutoDistribute);
         }
 
         if (elements.cardsContainer) {
@@ -2373,6 +2378,9 @@ const storageAvailable = (() => {
         const day = state.weekData.days[dayIndex];
         if (!day) {
           elements.controlCurrentStatus.innerHTML = '<strong>選択中のスロット</strong><span>まだ選択されていません。</span>';
+          if (elements.controlAutoDistribute) {
+            elements.controlAutoDistribute.disabled = true;
+          }
           return;
         }
         const dayDate = parseISO(day.dateISO);
@@ -2413,6 +2421,15 @@ const storageAvailable = (() => {
             return slots.some((item) => !item.taskId);
           });
           elements.controlAutoFill.disabled = !canEdit || !hasEmpty;
+        }
+        if (elements.controlAutoDistribute) {
+          const hasEmptyWeek = state.weekData.days.some((weekDay) => {
+            return kids.some((child) => {
+              const slots = weekDay.slots[child.id] || [];
+              return slots.some((item) => !item.taskId);
+            });
+          });
+          elements.controlAutoDistribute.disabled = !canEdit || !hasEmptyWeek;
         }
       }
 
@@ -2871,6 +2888,29 @@ const storageAvailable = (() => {
         render();
       }
 
+      function handleControlAutoDistribute() {
+        ensureControlSelectionValid();
+        if (!state.weekData) return;
+        if (!tasks.length) {
+          alert('タスクリストが空です。');
+          return;
+        }
+        const hasEmpty = state.weekData.days.some((day) => {
+          return kids.some((kid) => {
+            const slots = day.slots[kid.id] || [];
+            return slots.some((slot) => !slot.taskId);
+          });
+        });
+        if (!hasEmpty) {
+          alert('すべてのスロットが既に埋まっています。');
+          return;
+        }
+        activateEditMode();
+        autoDistributeWeek();
+        saveWeekData();
+        render();
+      }
+
       function addKid() {
         const index = kids.length;
         const newKid = {
@@ -3129,6 +3169,77 @@ const storageAvailable = (() => {
         });
       }
 
+      function autoDistributeWeek() {
+        if (!state.weekData || !tasks.length) return;
+        const counts = new Map();
+        tasks.forEach((task) => {
+          counts.set(task.id, 0);
+        });
+
+        state.weekData.days.forEach((day) => {
+          kids.forEach((kid) => {
+            const slots = day.slots[kid.id] || [];
+            slots.forEach((slot) => {
+              if (slot.taskId && counts.has(slot.taskId)) {
+                counts.set(slot.taskId, counts.get(slot.taskId) + 1);
+              }
+            });
+          });
+        });
+
+        const pickBalancedTask = (usedSet, lastAssigned) => {
+          let preferred = null;
+          let fallback = null;
+          tasks.forEach((task, index) => {
+            if (!counts.has(task.id)) {
+              counts.set(task.id, 0);
+            }
+            const count = counts.get(task.id);
+            const entry = { task, count, index };
+            if (!fallback || count < fallback.count || (count === fallback.count && index < fallback.index)) {
+              fallback = entry;
+            }
+            if (!usedSet.has(task.id) && task.id !== lastAssigned) {
+              if (!preferred || count < preferred.count || (count === preferred.count && index < preferred.index)) {
+                preferred = entry;
+              }
+            }
+          });
+          const choice = preferred || fallback;
+          return choice ? choice.task : null;
+        };
+
+        state.weekData.days.forEach((day) => {
+          kids.forEach((kid) => {
+            const slots = day.slots[kid.id] || [];
+            const usedToday = new Set();
+            slots.forEach((slot) => {
+              if (slot.taskId && counts.has(slot.taskId)) {
+                usedToday.add(slot.taskId);
+              }
+            });
+            let lastAssigned = null;
+            slots.forEach((slot) => {
+              if (slot.taskId) {
+                lastAssigned = slot.taskId;
+                return;
+              }
+              const nextTask = pickBalancedTask(usedToday, lastAssigned);
+              if (!nextTask) {
+                slot.taskId = null;
+                slot.status = 'unset';
+                return;
+              }
+              slot.taskId = nextTask.id;
+              slot.status = 'todo';
+              counts.set(nextTask.id, counts.get(nextTask.id) + 1);
+              usedToday.add(nextTask.id);
+              lastAssigned = nextTask.id;
+            });
+          });
+        });
+      }
+
       function autoFillDay(dayIndex) {
         if (!state.weekData) return;
         const day = state.weekData.days[dayIndex];
@@ -3334,7 +3445,3 @@ const storageAvailable = (() => {
   </script>
 </body>
 </html>
-
-
-
-
