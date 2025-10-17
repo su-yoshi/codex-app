@@ -198,6 +198,8 @@
       display: grid;
       gap: 24px;
       max-width: 100%;
+      width: min(100%, 780px);
+      margin: 0 auto;
       min-width: 0;
       position: relative;
       transition: var(--transition);
@@ -423,6 +425,22 @@
       font-size: 0.9rem;
       background: rgba(255, 255, 255, 0.95);
       transition: var(--transition);
+    }
+
+    .manager-item.kid input[data-kid-field="name"] {
+      min-width: 0;
+    }
+
+    .manager-item.task input[data-task-field="icon"] {
+      width: 72px;
+      min-width: 0;
+      text-align: center;
+      padding-inline: 8px;
+      justify-self: flex-start;
+    }
+
+    .manager-item.task input[data-task-field="label"] {
+      min-width: 0;
     }
 
     .manager-item input[type="text"]:focus {
@@ -1306,6 +1324,10 @@
       .manager-item button {
         width: 100%;
       }
+
+      .manager-item.task input[data-task-field="icon"] {
+        width: 64px;
+      }
     }
 
     @media (max-width: 720px) {
@@ -1358,8 +1380,10 @@
       }
 
       .control-panel {
-        padding: 22px 18px;
+        padding: 20px 16px;
         gap: 20px;
+        margin: 0;
+        width: 100%;
       }
 
       .control-panel__header {
@@ -1480,15 +1504,36 @@
         text-align: left;
       }
 
+      .control-panel__manager {
+        gap: 14px;
+      }
+
+      .manager-list {
+        gap: 10px;
+      }
+
+      .manager-item {
+        grid-template-columns: 1fr;
+        gap: 10px;
+      }
 
       .manager-item.kid,
       .manager-item.task {
-        grid-template-columns: 1fr 1fr;
+        grid-template-columns: 1fr;
       }
 
-      .manager-item.kid button,
-      .manager-item.task button {
-        grid-column: span 2;
+      .manager-item input[type="color"] {
+        width: 44px;
+        height: 32px;
+        justify-self: flex-start;
+      }
+
+      .manager-item button {
+        width: 100%;
+      }
+
+      .manager-item.task input[data-task-field="icon"] {
+        width: 58px;
       }
 
       .footer-actions {
