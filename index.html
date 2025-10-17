@@ -409,11 +409,11 @@
     }
 
     .manager-item.kid {
-      grid-template-columns: minmax(0, 1fr) 64px auto;
+      grid-template-columns: minmax(0, 1fr) 52px minmax(0, 110px);
     }
 
     .manager-item.task {
-      grid-template-columns: 80px minmax(0, 1fr) auto;
+      grid-template-columns: 68px minmax(0, 1fr) minmax(0, 110px);
     }
 
     .manager-item input[type="text"] {
@@ -442,7 +442,9 @@
 
     .manager-item button {
       justify-content: center;
-      min-width: 90px;
+      min-width: 0;
+      padding: 8px 12px;
+      font-size: 0.85rem;
     }
 
     .manager-empty {
@@ -1267,6 +1269,43 @@
       font-size: 0.78rem;
       color: rgba(31, 38, 64, 0.6);
       text-align: right;
+    }
+
+    @media (max-width: 960px) {
+      .control-panel {
+        padding: 22px 20px;
+      }
+
+      .control-form-grid {
+        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+        gap: 14px;
+      }
+
+      .control-panel__actions {
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+
+      .control-panel__actions .button {
+        flex: 1 1 calc(50% - 10px);
+        min-width: 0;
+      }
+
+      .manager-block {
+        padding: 14px 16px;
+      }
+
+      .manager-item.kid {
+        grid-template-columns: minmax(0, 1fr) 48px minmax(0, 100px);
+      }
+
+      .manager-item.task {
+        grid-template-columns: 60px minmax(0, 1fr) minmax(0, 100px);
+      }
+
+      .manager-item button {
+        width: 100%;
+      }
     }
 
     @media (max-width: 720px) {
