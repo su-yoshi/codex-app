@@ -1085,6 +1085,28 @@
       gap: 16px;
     }
 
+    .calendar-scroll {
+      overflow-x: auto;
+      padding-bottom: 6px;
+      border-radius: 18px;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: thin;
+    }
+
+    .calendar-scroll::-webkit-scrollbar {
+      height: 6px;
+    }
+
+    .calendar-scroll::-webkit-scrollbar-thumb {
+      background: rgba(91, 107, 229, 0.28);
+      border-radius: 999px;
+    }
+
+    .calendar-scroll > .calendar-weekdays,
+    .calendar-scroll > .calendar-grid {
+      min-width: 620px;
+    }
+
     .calendar-header {
       display: flex;
       justify-content: space-between;
@@ -1248,6 +1270,10 @@
     }
 
     @media (max-width: 720px) {
+      .app {
+        padding: 0 16px 60px;
+      }
+
       .site-header {
         padding: 28px 0 18px;
       }
@@ -1260,6 +1286,20 @@
       .nav-actions {
         width: 100%;
         justify-content: flex-start;
+      }
+
+      .calendar-panel {
+        padding: 20px 16px;
+      }
+
+      .calendar-scroll {
+        margin: 0 -16px;
+        padding: 0 16px 12px;
+      }
+
+      .calendar-scroll > .calendar-weekdays,
+      .calendar-scroll > .calendar-grid {
+        min-width: 560px;
       }
 
       .summary-grid {
@@ -1331,6 +1371,46 @@
         justify-content: center;
       }
 
+      .day-card__header {
+        flex-direction: column;
+        align-items: flex-start;
+        padding: 18px 18px 16px;
+        gap: 10px;
+      }
+
+      .day-card__body {
+        padding: 18px;
+        gap: 16px;
+      }
+
+      .kid-grid {
+        flex-direction: column;
+        overflow-x: visible;
+        padding: 0;
+        gap: 14px;
+        scroll-snap-type: none;
+      }
+
+      .kid-block {
+        flex: 1 1 auto;
+        width: 100%;
+      }
+
+      .slot {
+        min-height: 110px;
+      }
+
+      .slot-top {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 8px;
+      }
+
+      .slot-status {
+        width: 100%;
+        text-align: center;
+      }
+
       .control-panel__status {
         word-break: break-word;
         line-height: 1.45;
@@ -1344,6 +1424,12 @@
         align-self: stretch;
         white-space: normal;
         text-align: center;
+      }
+
+      .kid-block__header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
       }
 
       .footer-actions {
@@ -1414,16 +1500,18 @@
             <button type="button" data-calendar-nav="next">→</button>
           </div>
         </header>
-        <div class="calendar-weekdays">
-          <span>日</span>
-          <span>月</span>
-          <span>火</span>
-          <span>水</span>
-          <span>木</span>
-          <span>金</span>
-          <span>土</span>
+        <div class="calendar-scroll" role="group" aria-label="1週間の進捗">
+          <div class="calendar-weekdays">
+            <span>日</span>
+            <span>月</span>
+            <span>火</span>
+            <span>水</span>
+            <span>木</span>
+            <span>金</span>
+            <span>土</span>
+          </div>
+          <div id="calendarGrid" class="calendar-grid" aria-live="polite"></div>
         </div>
-        <div id="calendarGrid" class="calendar-grid" aria-live="polite"></div>
       </section>
 
       <section id="editControlPanel" class="control-panel" aria-label="編集コントロールセンター">
@@ -1577,6 +1665,7 @@
     <footer class="site-footer">
       <div class="footer-actions">
         <div class="footer-actions__group">
+          <button id="installApp" class="button primary" type="button" hidden>ホーム画面に追加</button>
           <button id="exportData" class="button secondary" type="button">バックアップを書き出す</button>
           <button id="importData" class="button ghost" type="button">バックアップを読み込む</button>
           <input id="importFile" type="file" accept="application/json" hidden aria-hidden="true">
@@ -1672,6 +1761,10 @@ const storageAvailable = (() => {
         }
       })();
 
+      const supportsMatchMedia = typeof window.matchMedia === 'function';
+      const initialStandalone = (supportsMatchMedia && window.matchMedia('(display-mode: standalone)').matches) || window.navigator.standalone === true;
+      let deferredInstallPrompt = null;
+
       const state = {
         weekOffset: 0,
         editMode: false,
@@ -1685,7 +1778,10 @@ const storageAvailable = (() => {
           slotIndex: 0,
           taskId: ''
         },
-        calendarMonth: startOfMonth(new Date())
+        calendarMonth: startOfMonth(new Date()),
+        installPromptReady: false,
+        installMessage: initialStandalone ? 'アプリとしてホーム画面から直接開けます。' : '',
+        isStandalone: initialStandalone
       };
 
       const elements = {
@@ -1736,6 +1832,7 @@ const storageAvailable = (() => {
         exportData: document.getElementById('exportData'),
         importData: document.getElementById('importData'),
         importFile: document.getElementById('importFile'),
+        installApp: document.getElementById('installApp'),
         footerNote: document.getElementById('footerNote')
       };
       init();
@@ -1748,6 +1845,7 @@ const storageAvailable = (() => {
         renderTaskLibrary();
         setupControlPanel();
         bindEvents();
+        setupPWAInstall();
         goToWeek(0);
       }
 
@@ -1923,6 +2021,91 @@ const storageAvailable = (() => {
             }
           });
         }
+      }
+
+      function setupPWAInstall() {
+        if (!elements.installApp) return;
+
+        const userAgent = window.navigator.userAgent.toLowerCase();
+        const isIOS = /iphone|ipad|ipod/.test(userAgent);
+
+        const showInstalledState = () => {
+          elements.installApp.hidden = false;
+          elements.installApp.disabled = true;
+          elements.installApp.textContent = 'アプリとして利用中';
+        };
+
+        if (state.isStandalone) {
+          showInstalledState();
+          state.installMessage = 'アプリとしてホーム画面から直接開けます。';
+          updateFooterControls();
+          return;
+        }
+
+        if (isIOS) {
+          state.installMessage = 'iOSのSafariでは共有メニューの「ホーム画面に追加」でインストールできます。';
+          updateFooterControls();
+        }
+
+        window.addEventListener('beforeinstallprompt', (event) => {
+          event.preventDefault();
+          deferredInstallPrompt = event;
+          state.installPromptReady = true;
+          state.installMessage = 'ホーム画面に追加してオフラインでも使えます。';
+          elements.installApp.hidden = false;
+          elements.installApp.disabled = false;
+          elements.installApp.textContent = 'ホーム画面に追加';
+          updateFooterControls();
+        });
+
+        elements.installApp.addEventListener('click', async () => {
+          if (!deferredInstallPrompt) {
+            state.installMessage = 'ブラウザーのメニューから「ホーム画面に追加」を選ぶとインストールできます。';
+            elements.installApp.hidden = true;
+            updateFooterControls();
+            return;
+          }
+
+          elements.installApp.disabled = true;
+          deferredInstallPrompt.prompt();
+
+          let choiceResult;
+          try {
+            choiceResult = await deferredInstallPrompt.userChoice;
+          } catch (error) {
+            console.warn('Install prompt failed.', error);
+          }
+
+          state.installPromptReady = false;
+
+          if (!choiceResult) {
+            state.installMessage = 'ブラウザーのメニューから「ホーム画面に追加」を選ぶとインストールできます。';
+            elements.installApp.hidden = true;
+            deferredInstallPrompt = null;
+            updateFooterControls();
+            return;
+          }
+
+          if (choiceResult.outcome === 'accepted') {
+            state.installMessage = 'インストールありがとうございます！ホーム画面から起動できます。';
+            showInstalledState();
+          } else {
+            state.installMessage = 'ブラウザーのメニューから「ホーム画面に追加」を選ぶとインストールできます。';
+            elements.installApp.hidden = true;
+          }
+
+          deferredInstallPrompt = null;
+          updateFooterControls();
+        });
+
+        window.addEventListener('appinstalled', () => {
+          deferredInstallPrompt = null;
+          state.installPromptReady = false;
+          state.isStandalone = true;
+          state.installMessage = 'アプリとしてホーム画面から直接開けます。';
+          showInstalledState();
+          updateFooterControls();
+        });
       }
 
       function renderTaskLibrary() {
@@ -2632,9 +2815,13 @@ const storageAvailable = (() => {
           elements.importData.disabled = !storageAvailable;
         }
         if (elements.footerNote) {
-          elements.footerNote.textContent = storageAvailable
+          let message = storageAvailable
             ? 'バックアップは JSON 形式で保存され、この端末のブラウザーに保存されたデータをまとめて管理できます。'
             : 'ローカルストレージが利用できないため、バックアップ機能は使用できません。';
+          if (state.installMessage) {
+            message += ' ' + state.installMessage;
+          }
+          elements.footerNote.textContent = message;
         }
       }
 

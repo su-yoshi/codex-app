@@ -1,9 +1,13 @@
-const CACHE_NAME = 'kids-planner-cache-v3';
+const CACHE_NAME = 'kids-planner-cache-v4';
 const ASSETS = [
   './',
   './index.html',
   './manifest.webmanifest',
   './sw.js',
+  './styles.css',
+  './app.js',
+  './app_script.js',
+  './workflow_code.js',
   './icons/icon-192.png',
   './icons/icon-512.png'
 ];
@@ -12,6 +16,7 @@ self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS))
   );
+  self.skipWaiting();
 });
 
 self.addEventListener('activate', (event) => {
@@ -22,7 +27,7 @@ self.addEventListener('activate', (event) => {
           .filter((key) => key !== CACHE_NAME)
           .map((key) => caches.delete(key))
       )
-    )
+    ).then(() => self.clients.claim())
   );
 });
 
