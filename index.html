@@ -2791,6 +2791,10 @@ const storageAvailable = (() => {
           elements.controlCurrentStatus.innerHTML = '<strong>選択中のスロット</strong><span>まだ選択されていません。</span>';
           if (elements.controlAutoDistribute) {
             elements.controlAutoDistribute.disabled = true;
+            elements.controlAutoDistribute.setAttribute(
+              'title',
+              '週全体のデータを読み込むと、バランス配分ボタンを使えるようになります。'
+            );
           }
           return;
         }
@@ -2834,13 +2838,18 @@ const storageAvailable = (() => {
           elements.controlAutoFill.disabled = !canEdit || !hasEmpty;
         }
         if (elements.controlAutoDistribute) {
-          const hasEmptyWeek = state.weekData.days.some((weekDay) => {
+          const hasAssignments = state.weekData.days.some((weekDay) => {
             return kids.some((child) => {
               const slots = weekDay.slots[child.id] || [];
-              return slots.some((item) => !item.taskId);
+              return slots.some((item) => item.taskId);
             });
           });
-          elements.controlAutoDistribute.disabled = !canEdit || !hasEmptyWeek;
+          const canAutoDistribute = canEdit && tasks.length && kids.length;
+          elements.controlAutoDistribute.disabled = !canAutoDistribute;
+          const title = hasAssignments
+            ? '既存の予定も含めて、1週間分のタスクをバランスよく再配分します。'
+            : '空いているスロットにタスクをバランスよく割り当てます。';
+          elements.controlAutoDistribute.setAttribute('title', title);
         }
       }
 
@@ -3307,24 +3316,31 @@ const storageAvailable = (() => {
         ensureControlSelectionValid();
         if (!state.weekData) return;
         if (!tasks.length) {
-          alert('タスクリストが空です。');
+          alert('タスク一覧が空です。');
           return;
         }
-        const hasEmpty = state.weekData.days.some((day) => {
+        if (!kids.length) {
+          alert('お手伝いメンバーが登録されていません。');
+          return;
+        }
+        const hasAssignments = state.weekData.days.some((day) => {
           return kids.some((kid) => {
             const slots = day.slots[kid.id] || [];
-            return slots.some((slot) => !slot.taskId);
+            return slots.some((slot) => slot.taskId);
           });
         });
-        if (!hasEmpty) {
-          alert('すべてのスロットが既に埋まっています。');
-          return;
+        if (hasAssignments) {
+          const message = '既存の割り当てをすべてバランスよく並び替えてもよろしいですか？';
+          if (!confirm(message)) {
+            return;
+          }
         }
         activateEditMode();
         autoDistributeWeek();
         saveWeekData();
         render();
       }
+
 
       function addKid() {
         const index = kids.length;
@@ -3587,35 +3603,23 @@ const storageAvailable = (() => {
       function autoDistributeWeek() {
         if (!state.weekData || !tasks.length) return;
         const counts = new Map();
+        const lastAssignedByKid = new Map();
         tasks.forEach((task) => {
           counts.set(task.id, 0);
         });
 
-        state.weekData.days.forEach((day) => {
-          kids.forEach((kid) => {
-            const slots = day.slots[kid.id] || [];
-            slots.forEach((slot) => {
-              if (slot.taskId && counts.has(slot.taskId)) {
-                counts.set(slot.taskId, counts.get(slot.taskId) + 1);
-              }
-            });
-          });
-        });
-
-        const pickBalancedTask = (usedSet, lastAssigned) => {
+        const pickBalancedTask = (usedSet, lastAssigned, offset) => {
           let preferred = null;
           let fallback = null;
           tasks.forEach((task, index) => {
-            if (!counts.has(task.id)) {
-              counts.set(task.id, 0);
-            }
-            const count = counts.get(task.id);
-            const entry = { task, count, index };
-            if (!fallback || count < fallback.count || (count === fallback.count && index < fallback.index)) {
+            const count = counts.has(task.id) ? counts.get(task.id) : 0;
+            const priority = (index - offset + tasks.length) % tasks.length;
+            const entry = { task, count, priority };
+            if (!fallback || count < fallback.count || (count === fallback.count && priority < fallback.priority)) {
               fallback = entry;
             }
             if (!usedSet.has(task.id) && task.id !== lastAssigned) {
-              if (!preferred || count < preferred.count || (count === preferred.count && index < preferred.index)) {
+              if (!preferred || count < preferred.count || (count === preferred.count && priority < preferred.priority)) {
                 preferred = entry;
               }
             }
@@ -3624,36 +3628,45 @@ const storageAvailable = (() => {
           return choice ? choice.task : null;
         };
 
-        state.weekData.days.forEach((day) => {
-          kids.forEach((kid) => {
-            const slots = day.slots[kid.id] || [];
+        state.weekData.days.forEach((day, dayIndex) => {
+          if (!day.slots || typeof day.slots !== 'object') {
+            day.slots = {};
+          }
+          kids.forEach((kid, kidIndex) => {
+            let slots = day.slots[kid.id];
+            if (!Array.isArray(slots) || slots.length !== SLOTS_PER_KID) {
+              slots = Array.from({ length: SLOTS_PER_KID }, () => ({
+                taskId: null,
+                status: 'unset'
+              }));
+            }
             const usedToday = new Set();
-            slots.forEach((slot) => {
-              if (slot.taskId && counts.has(slot.taskId)) {
-                usedToday.add(slot.taskId);
-              }
-            });
-            let lastAssigned = null;
-            slots.forEach((slot) => {
-              if (slot.taskId) {
-                lastAssigned = slot.taskId;
-                return;
-              }
-              const nextTask = pickBalancedTask(usedToday, lastAssigned);
-              if (!nextTask) {
+            let lastAssigned = lastAssignedByKid.get(kid.id) || null;
+
+            for (let slotIndex = 0; slotIndex < SLOTS_PER_KID; slotIndex += 1) {
+              const slot = slots[slotIndex] || { taskId: null, status: 'unset' };
+              const offset = (dayIndex + kidIndex + slotIndex) % tasks.length;
+              const nextTask = pickBalancedTask(usedToday, lastAssigned, offset);
+              if (nextTask) {
+                slot.taskId = nextTask.id;
+                slot.status = 'todo';
+                counts.set(nextTask.id, (counts.get(nextTask.id) || 0) + 1);
+                usedToday.add(nextTask.id);
+                lastAssigned = nextTask.id;
+              } else {
                 slot.taskId = null;
                 slot.status = 'unset';
-                return;
               }
-              slot.taskId = nextTask.id;
-              slot.status = 'todo';
-              counts.set(nextTask.id, counts.get(nextTask.id) + 1);
-              usedToday.add(nextTask.id);
-              lastAssigned = nextTask.id;
-            });
+              slots[slotIndex] = slot;
+            }
+
+            slots.length = SLOTS_PER_KID;
+            day.slots[kid.id] = slots;
+            lastAssignedByKid.set(kid.id, lastAssigned);
           });
         });
       }
+
 
       function autoFillDay(dayIndex) {
         if (!state.weekData) return;
