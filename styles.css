@@ -344,6 +344,43 @@ body::before {
   opacity: 1;
 }
 
+/* 大人モード切替トグル（ボトムナビ内） */
+.adult-toggle-btn {
+  flex: 0.8;
+}
+.toggle-switch {
+  width: 44px;
+  height: 24px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  position: relative;
+  margin: 10px 0;
+  transition: var(--transition);
+  border: 1px solid rgba(255,255,255,0.2);
+}
+.toggle-knob {
+  width: 20px;
+  height: 20px;
+  background: var(--muted);
+  border-radius: 50%;
+  position: absolute;
+  top: 1px;
+  left: 2px;
+  transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), background 0.3s;
+}
+.adult-toggle-btn.is-active .toggle-switch {
+  background: rgba(59, 130, 246, 0.3);
+  border-color: rgba(59, 130, 246, 0.6);
+}
+.adult-toggle-btn.is-active .toggle-knob {
+  transform: translateX(18px);
+  background: var(--accent-blue);
+  box-shadow: 0 0 10px var(--accent-blue-glow);
+}
+.adult-toggle-btn.is-active span {
+  color: var(--accent-blue);
+}
+
 /* Tab Content Logic */
 .tab-content {
   display: none;

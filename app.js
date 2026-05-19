@@ -169,7 +169,7 @@
       specialReward: document.getElementById('specialReward'),
       specialChallenge: document.getElementById('specialChallenge'),
       cardsContainer: document.getElementById('cardsContainer'),
-      editToggle: document.getElementById('editToggle'),
+      bottomAdultToggle: document.getElementById('bottomAdultToggle'),
       editStateLabel: document.getElementById('editStateLabel'),
       editModeHint: document.getElementById('editModeHint'),
       controlPanel: document.getElementById('editControlPanel'),
@@ -915,7 +915,7 @@
     }
 
     // 編集モードトグル
-    if (elements.editToggle) elements.editToggle.addEventListener('click', toggleEditMode);
+    if (elements.bottomAdultToggle) elements.bottomAdultToggle.addEventListener('click', toggleEditMode);
     
     if (elements.controlCollapse) elements.controlCollapse.addEventListener('click', () => {
       state.controlCollapsed = !state.controlCollapsed;
@@ -1593,22 +1593,8 @@
   function updateEditState() {
     document.body.classList.toggle('is-edit', state.editMode);
     
-    // editStateLabel は index.html から削除したため処理不要
-    
-    if (elements.editToggle) {
-      elements.editToggle.innerHTML = state.editMode ? '🔒 おとなモードを終わる' : '👨‍👩‍👧 おとなモード（承認）にする';
-      
-      if (state.editMode) {
-        elements.editToggle.className = 'button primary';
-        elements.editToggle.style.background = 'linear-gradient(135deg, #ef4444, #b91c1c)';
-        elements.editToggle.style.boxShadow = '0 4px 15px rgba(239, 68, 68, 0.4)';
-        elements.editToggle.style.borderColor = 'transparent';
-      } else {
-        elements.editToggle.className = 'button secondary';
-        elements.editToggle.style.background = '';
-        elements.editToggle.style.boxShadow = '';
-        elements.editToggle.style.borderColor = 'rgba(255,255,255,0.2)';
-      }
+    if (elements.bottomAdultToggle) {
+      elements.bottomAdultToggle.classList.toggle('is-active', state.editMode);
     }
   }
 

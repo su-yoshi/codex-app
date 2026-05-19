@@ -1,5 +1,5 @@
 
-const CACHE_NAME = 'kids-planner-cache-v18';
+const CACHE_NAME = 'kids-planner-cache-v19';
 const APP_SHELL = [
   './index.html',
   './manifest.webmanifest',
