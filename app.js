@@ -832,7 +832,7 @@
     // 準備画面：ウィークリープランナーのセルクリック
     if (elements.weeklyPlanner) {
       elements.weeklyPlanner.addEventListener('click', e => {
-        const target = e.target.closest('.planner-task') || e.target.closest('.planner-cell');
+        const target = e.target.closest('.planner-task-item') || e.target.closest('.planner-task') || e.target.closest('.planner-cell');
         if (!target) return;
         
         const dayIndex = parseInt(target.dataset.dayIndex);
@@ -906,11 +906,7 @@
       elements.calendarGrid.addEventListener('click', e => {
         const cell = e.target.closest('.calendar-cell');
         if (!cell || !cell.dataset.date) return;
-        const clickedDate = parseISO(cell.dataset.date);
-        const dayIndex = (clickedDate.getDay() + 6) % 7;
-        const pivot = new Date(clickedDate);
-        goToWeekSpecific(pivot, dayIndex);
-        switchTab('today');
+        showCalendarDetail(cell.dataset.date);
       });
     }
 
@@ -1752,47 +1748,106 @@
     elements.calendarGrid.innerHTML = html;
   }
 
+  function showCalendarDetail(dateISO) {
+    const detailPanel = document.getElementById('calendarDetail');
+    if (!detailPanel) return;
+    
+    // 選択されたセルのハイライト
+    document.querySelectorAll('.calendar-cell').forEach(c => c.classList.remove('is-selected'));
+    const cell = document.querySelector(`.calendar-cell[data-date="${dateISO}"]`);
+    if (cell) cell.classList.add('is-selected');
+
+    const clickedDate = parseISO(dateISO);
+    const weekStartForDay = startOfWeek(clickedDate);
+    const weekKeyForDay = buildWeekKey(weekStartForDay);
+    const weekDataForDay = (weekKeyForDay === state.weekKey) ? state.weekData : loadWeekData(weekKeyForDay, weekStartForDay);
+    
+    const dayData = weekDataForDay.days.find(d => d.dateISO === dateISO);
+    if (!dayData) {
+      detailPanel.style.display = 'none';
+      return;
+    }
+
+    let detailHtml = `
+      <div class="detail-header">${clickedDate.getMonth() + 1}月${clickedDate.getDate()}日のきろく</div>
+      <div class="detail-list">
+    `;
+
+    let hasDoneTasks = false;
+
+    kids.forEach(kid => {
+      const slots = dayData.slots[kid.id] || [];
+      slots.forEach(s => {
+        if (s.taskId && s.status === 'done') {
+          const task = taskMap.get(s.taskId);
+          if (task) {
+            hasDoneTasks = true;
+            detailHtml += `
+              <div class="detail-item" style="--kid-color: ${kid.color}">
+                <div class="detail-kid-name">${escapeHtml(kid.name)}</div>
+                <div class="detail-task-info">
+                  <span class="icon">${task.icon}</span>
+                  <span class="label">${escapeHtml(task.label)}</span>
+                </div>
+                <div class="detail-reward">+¥${task.reward}</div>
+              </div>
+            `;
+          }
+        }
+      });
+    });
+
+    if (!hasDoneTasks) {
+      detailHtml += `<div style="text-align: center; color: var(--muted); padding: 12px 0; font-size: 0.9rem;">この日クリアしたクエストはありません</div>`;
+    }
+
+    detailHtml += `</div>`;
+    detailPanel.innerHTML = detailHtml;
+    detailPanel.style.display = 'block';
+  }
+
   function renderWeeklyPlanner() {
     if (!elements.weeklyPlanner || !state.weekData) return;
     
     const days = state.weekData.days;
-    let html = `
-      <table class="planner-table">
-        <thead>
-          <tr>
-            <th class="kid-col">ヒーロー</th>
-            ${days.map(d => {
-              const date = parseISO(d.dateISO);
-              return `<th>${date.getDate()}(${DAY_NAMES[date.getDay()]})</th>`;
-            }).join('')}
-          </tr>
-        </thead>
-        <tbody>
-    `;
+    let html = '<div class="planner-accordion">';
 
-    kids.forEach(kid => {
-      html += `<tr><td class="kid-col">${escapeHtml(kid.name)}</td>`;
-      days.forEach((day, dayIndex) => {
+    days.forEach((day, dayIndex) => {
+      const date = parseISO(day.dateISO);
+      const isToday = day.dateISO === toISO(new Date());
+      // 今日ならデフォルトで開いておく
+      html += `
+        <details class="planner-day-panel" ${isToday ? 'open' : ''}>
+          <summary>${date.getDate()}日（${DAY_NAMES[date.getDay()]}）</summary>
+          <div class="planner-day-content">
+      `;
+      
+      kids.forEach(kid => {
         const slots = day.slots[kid.id] || [];
         html += `
-          <td class="planner-cell" data-day-index="${dayIndex}" data-kid-id="${kid.id}" data-slot-index="0">
-            <div class="planner-task-list">
-              ${slots.map((s, sIdx) => {
-                const task = s.taskId ? taskMap.get(s.taskId) : null;
-                return `
-                  <div class="planner-task" data-day-index="${dayIndex}" data-kid-id="${kid.id}" data-slot-index="${sIdx}">
-                    ${task ? `<span class="icon">${task.icon}</span><span class="label">${task.label}</span>` : '<span class="planner-empty">未設定</span>'}
-                  </div>
-                `;
-              }).join('<hr style="opacity:0.1; margin:4px 0">')}
+            <div class="planner-kid-row">
+              <div class="planner-kid-name" style="background: ${kid.color}">${escapeHtml(kid.name)}</div>
+              <div class="planner-task-list">
+                ${slots.map((s, sIdx) => {
+                  const task = s.taskId ? taskMap.get(s.taskId) : null;
+                  return `
+                    <div class="planner-task-item" data-day-index="${dayIndex}" data-kid-id="${kid.id}" data-slot-index="${sIdx}">
+                      ${task ? `<span class="icon">${task.icon}</span><span class="label">${task.label}</span>` : '<span class="icon">➕</span><span class="label" style="color:var(--muted)">タスクを設定</span>'}
+                    </div>
+                  `;
+                }).join('')}
+              </div>
             </div>
-          </td>
         `;
       });
-      html += `</tr>`;
+      
+      html += `
+          </div>
+        </details>
+      `;
     });
 
-    html += `</tbody></table>`;
+    html += '</div>';
     elements.weeklyPlanner.innerHTML = html;
   }
 
