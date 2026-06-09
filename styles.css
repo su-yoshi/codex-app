@@ -538,3 +538,174 @@ body.is-child-mode #tab-today .day-chip.is-active {
     background: rgba(255, 255, 255, 0.94);
   }
 }
+
+/* ─── Final public override: keep production screens bright and readable ─── */
+:root {
+  --bg-dark: #eef6ff !important;
+  --bg-deep: #dbeafe !important;
+  --bg-gradient: linear-gradient(180deg, #eaf5ff 0%, #f8fbff 46%, #ffffff 100%) !important;
+  --panel: rgba(255, 255, 255, 0.94) !important;
+  --panel-strong: #ffffff !important;
+  --panel-soft: #f7faff !important;
+  --border: #d7e4f2 !important;
+  --border-magic: #bfd7f5 !important;
+  --text: #142033 !important;
+  --muted: #52647a !important;
+  --accent-gold: #b85c00 !important;
+  --accent-blue: #2563eb !important;
+  --accent-violet: #7c3aed !important;
+  --money: #b45309 !important;
+  --shadow-magic: 0 18px 44px rgba(37, 99, 235, 0.13) !important;
+  --shadow-card: 0 10px 28px rgba(15, 35, 65, 0.09) !important;
+}
+
+html,
+body {
+  background: #eef6ff !important;
+  color: #142033 !important;
+}
+
+body {
+  background:
+    radial-gradient(circle at 16% 8%, rgba(125, 211, 252, 0.32), transparent 30%),
+    radial-gradient(circle at 88% 2%, rgba(254, 240, 138, 0.24), transparent 24%),
+    linear-gradient(180deg, #eaf5ff 0%, #f8fbff 46%, #ffffff 100%) !important;
+}
+
+body::before {
+  display: none !important;
+}
+
+.site-header,
+.tab-nav,
+.control-panel,
+.day-card,
+.kid-block,
+.today-hero,
+.calendar-detail-panel,
+.planner-day-panel,
+.modal-content,
+.summary-card--hero,
+.kid-bank-item,
+.growth-album-panel,
+.reward-shop-panel,
+.family-mission-panel {
+  background: rgba(255, 255, 255, 0.94) !important;
+  color: #142033 !important;
+  border-color: #d7e4f2 !important;
+  box-shadow: 0 10px 28px rgba(15, 35, 65, 0.09) !important;
+  backdrop-filter: none !important;
+}
+
+.site-header {
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.brand-title,
+.brand-copy,
+.board-header h2,
+.board-sub,
+.control-panel__title,
+.day-card__header,
+.kid-name,
+.kid-next-line,
+.slot-title,
+.slot-help,
+.slot-status,
+.tab-btn,
+.tab-btn span,
+.stat-value,
+.stat-label,
+.planner-kid-name,
+.planner-table .kid-col,
+.today-hero__msg,
+.total-reward-label,
+.setting-label {
+  color: #142033 !important;
+  text-shadow: none !important;
+}
+
+.brand-copy,
+.board-sub,
+.slot-help,
+.kid-choice__meta,
+.kid-summary,
+.stat-label,
+.setting-label,
+.total-reward-label {
+  color: #52647a !important;
+}
+
+.tab-nav {
+  border: 1px solid #d7e4f2 !important;
+}
+
+.tab-btn i {
+  background: #f7faff !important;
+  border-color: #e1ebf6 !important;
+  color: #52647a !important;
+  box-shadow: none !important;
+}
+
+.tab-btn.is-active,
+.tab-btn.is-active i {
+  background: #fff7e6 !important;
+  color: #b85c00 !important;
+  border-color: #f7d58e !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+.button.secondary,
+.button.ghost,
+.day-chip,
+.kid-choice,
+.slot,
+.calendar-cell,
+.planner-task-item,
+.detail-item,
+.task-option,
+.collection-item,
+.sync-status,
+.stat-item {
+  background: #ffffff !important;
+  color: #142033 !important;
+  border-color: #d7e4f2 !important;
+  box-shadow: 0 6px 16px rgba(15, 35, 65, 0.06) !important;
+}
+
+.slot {
+  border-left-color: var(--slot-accent, #2563eb) !important;
+}
+
+.slot-status {
+  background: #eaf2ff !important;
+  color: #1d4ed8 !important;
+  border: 1px solid #c7dcf8 !important;
+}
+
+.slot-status.is-pending,
+.slot-status.status-pending {
+  background: #fff7ed !important;
+  color: #c2410c !important;
+}
+
+.slot-status.is-done,
+.slot-status.status-done {
+  background: #dcfce7 !important;
+  color: #166534 !important;
+}
+
+.slot-reward,
+.total-reward-amount,
+.money-total {
+  color: #b45309 !important;
+  text-shadow: none !important;
+}
+
+.kid-avatar-hero,
+.brand-avatar-wrapper {
+  background: #ffffff !important;
+  box-shadow: 0 10px 22px rgba(37, 99, 235, 0.16) !important;
+}
