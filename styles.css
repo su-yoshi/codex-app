@@ -270,3 +270,271 @@ body.is-child-mode #tab-today .chore-list { display: grid; gap: 10px; }
   body.is-child-mode #tab-today .slot-status { min-width: 116px; padding: 10px 12px; font-size: .9rem; }
   .button,.slot-status { min-height: 44px; white-space: normal; }
 }
+
+/* ─── Production Readability Theme ─── */
+:root {
+  --bg-dark: #eef6ff;
+  --bg-deep: #dbeafe;
+  --bg-gradient:
+    radial-gradient(circle at 16% 8%, rgba(125, 211, 252, 0.34), transparent 30%),
+    radial-gradient(circle at 88% 2%, rgba(254, 240, 138, 0.28), transparent 24%),
+    linear-gradient(180deg, #eaf5ff 0%, #f8fbff 48%, #ffffff 100%);
+  --panel: rgba(255, 255, 255, 0.92);
+  --panel-strong: #ffffff;
+  --panel-soft: #f6f9fe;
+  --border: #d7e4f2;
+  --border-magic: #bfd7f5;
+  --text: #142033;
+  --muted: #52647a;
+  --accent-gold: #b85c00;
+  --accent-gold-glow: rgba(245, 158, 11, 0.18);
+  --accent-blue: #2563eb;
+  --accent-violet: #7c3aed;
+  --money: #b45309;
+  --shadow-magic: 0 18px 44px rgba(37, 99, 235, 0.13);
+  --shadow-card: 0 10px 28px rgba(15, 35, 65, 0.09);
+}
+
+html,
+body {
+  background: #eef6ff;
+}
+
+body {
+  background: var(--bg-gradient);
+  color: var(--text);
+}
+
+body::before {
+  opacity: 0.34;
+  background:
+    radial-gradient(circle at 8% 14%, rgba(255, 255, 255, 0.75) 0 10px, transparent 11px),
+    radial-gradient(circle at 82% 18%, rgba(255, 255, 255, 0.58) 0 18px, transparent 19px),
+    radial-gradient(circle at 24% 72%, rgba(147, 197, 253, 0.18) 0 90px, transparent 92px);
+}
+
+.site-header {
+  border-bottom-color: rgba(37, 99, 235, 0.14);
+}
+
+.brand-title,
+.control-panel__title,
+.board-header h2,
+.day-card__header,
+.slot-title,
+.stat-value,
+.planner-kid-name,
+.planner-table .kid-col,
+.kid-name {
+  color: var(--text);
+  text-shadow: none;
+}
+
+.brand-copy,
+.board-sub,
+.today-hero__msg,
+.stat-label,
+.slot-help,
+.slot-reward,
+.calendar-cell__progress,
+.setting-label,
+.planner-table th,
+.detail-kid-name {
+  color: var(--muted);
+}
+
+.brand-avatar-wrapper {
+  background: #dbeafe;
+  border-color: #60a5fa;
+  box-shadow: 0 12px 26px rgba(37, 99, 235, 0.18);
+  animation: none;
+}
+
+.brand-avatar-wrapper::after,
+.kid-avatar-hero::after {
+  display: none;
+}
+
+.button.secondary,
+.button.ghost {
+  background: #ffffff;
+  color: #334155;
+  border: 1px solid var(--border);
+  box-shadow: 0 5px 14px rgba(15, 35, 65, 0.05);
+}
+
+.button.ghost:hover,
+.button.secondary:hover {
+  color: var(--text);
+  background: #f8fbff;
+  border-color: #93c5fd;
+}
+
+.tab-nav {
+  background: rgba(255, 255, 255, 0.94);
+  border-color: var(--border);
+  box-shadow: 0 14px 36px rgba(15, 35, 65, 0.09);
+}
+
+.tab-btn {
+  color: #53657c;
+}
+
+.tab-btn i {
+  background: #f6f9fe;
+  border-color: #e1ebf6;
+}
+
+.tab-btn.is-active {
+  color: #1d4ed8;
+}
+
+.tab-btn.is-active,
+.tab-btn.is-active i {
+  background: #fff7e6;
+  border-color: #f7d58e;
+  box-shadow: none;
+}
+
+.tab-btn.is-active i {
+  color: #b85c00;
+  transform: none;
+}
+
+.control-panel,
+.day-card,
+.calendar-detail-panel,
+.planner-day-panel,
+.modal-content {
+  background: var(--panel-strong);
+  color: var(--text);
+  border-color: var(--border);
+  box-shadow: var(--shadow-card);
+  backdrop-filter: none;
+}
+
+.today-hero,
+.kid-block,
+.planner-task-item,
+.calendar-cell,
+.detail-item,
+.task-option,
+.collection-item,
+.sync-status,
+.stat-item {
+  background: #f8fbff;
+  color: var(--text);
+  border-color: var(--border);
+}
+
+.day-card__header,
+.planner-day-panel summary,
+.planner-table th,
+.planner-table .kid-col {
+  background: #f3f8ff;
+  color: var(--text);
+}
+
+.slot {
+  background: #ffffff;
+  color: var(--text);
+  border-color: #dce7f5;
+  box-shadow: 0 8px 20px rgba(15, 35, 65, 0.07);
+}
+
+.slot-status {
+  color: #0f172a;
+  background: #eaf2ff;
+  border: 1px solid #c7dcf8;
+}
+
+.slot-status.is-todo,
+.slot-status.status-todo {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.slot-status.is-pending,
+.slot-status.status-pending {
+  background: #fff7ed;
+  color: #c2410c;
+}
+
+.slot-status.is-done,
+.slot-status.status-done {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.slot-reward {
+  background: #fff7ed;
+  color: #9a3412;
+  border-color: #fed7aa;
+}
+
+.kid-avatar-hero {
+  background: #ffffff;
+  box-shadow: 0 10px 22px color-mix(in srgb, var(--kid-color, #3b82f6) 18%, transparent);
+}
+
+.summary-card--hero,
+.kid-bank-item {
+  background: #ffffff;
+  color: var(--text);
+  border-color: var(--border);
+  box-shadow: var(--shadow-card);
+}
+
+.money-total,
+.total-reward-amount {
+  color: var(--money);
+  text-shadow: none;
+}
+
+.modal-overlay {
+  background: rgba(15, 23, 42, 0.38);
+}
+
+.modal-content--event {
+  background: #ffffff;
+  border-color: #facc15;
+  color: var(--text);
+}
+
+.gacha-result {
+  background: #ffffff;
+  color: var(--text);
+}
+
+body.is-child-mode #tab-today .board-header h2,
+body.is-child-mode #tab-today .board-sub,
+body.is-child-mode #tab-today .kid-choice__name,
+body.is-child-mode #tab-today .kid-choice__meta,
+body.is-child-mode #tab-today .kid-next-line {
+  text-shadow: none;
+}
+
+body.is-child-mode #tab-today .day-card,
+body.is-child-mode #tab-today .kid-block,
+body.is-child-mode #tab-today .kid-choice,
+body.is-child-mode #tab-today .day-chip {
+  background: #ffffff;
+  color: var(--text);
+  border-color: var(--border);
+}
+
+body.is-child-mode #tab-today .kid-block {
+  box-shadow: var(--shadow-card);
+}
+
+body.is-child-mode #tab-today .day-chip.is-active {
+  background: #fff7ed;
+  color: #9a3412;
+  border-color: #fdba74;
+}
+
+@media (min-width: 960px) {
+  .tab-nav {
+    background: rgba(255, 255, 255, 0.94);
+  }
+}
