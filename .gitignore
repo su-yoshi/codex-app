@@ -2,3 +2,5 @@ node_modules/
 dist/
 .env
 .vscode/
+data/
+__pycache__/

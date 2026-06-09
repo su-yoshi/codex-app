@@ -6,18 +6,14 @@
     <title>クラウドん・マネーアドベンチャー</title>
     
     <!-- SEO & Web App -->
-    <meta name="description" content="クラウドん先生と楽しくお金の勉強！お手伝いをしてスターを集め、夢のアイテムをゲットしよう。">
+    <meta name="description" content="家族で使えるお手伝い帳。今日やること、承認、貯金、ごほうびを親子で分かりやすく管理できます。">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="theme-color" content="#050510">
-    
-    <!-- Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;500;700;900&family=Noto+Sans+JP:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <link rel="icon" href="icons/icon-192.png">
     
     <!-- Styles -->
-    <link rel="stylesheet" href="styles.css?v=17">
+      <link rel="stylesheet" href="styles.css?v=46">
 </head>
 <body>
   <div class="app">
@@ -28,7 +24,7 @@
         </div>
         <div>
           <h1 class="brand-title">クラウドん・マネーアドベンチャー</h1>
-          <p class="brand-copy">クラウドん先生と学ぼう！お手伝いで貯める、夢の作戦ボード。</p>
+          <p class="brand-copy">今日のお手伝い、承認、貯金、ごほうびを家族で見える化。</p>
         </div>
       </div>
       <nav class="nav-actions" aria-label="週の移動">
@@ -38,28 +34,57 @@
       </nav>
     </header>
 
-    <nav class="tab-nav">
+    <nav class="tab-nav child-nav" id="childNav" aria-label="こどもメニュー">
       <button class="tab-btn is-active" data-tab="today">
         <i>🏠</i>
         <span>今日</span>
       </button>
-      <button class="tab-btn" data-tab="log">
-        <i>📅</i>
-        <span>冒険ログ</span>
-      </button>
       <button class="tab-btn" data-tab="bank">
         <i>💰</i>
-        <span>貯金箱</span>
+        <span>貯金</span>
+      </button>
+      <button class="tab-btn" data-tab="rewards">
+        <i>🎁</i>
+        <span>ごほうび</span>
+      </button>
+      <button class="tab-btn" data-tab="album">
+        <i>📔</i>
+        <span>アルバム</span>
+      </button>
+      <button id="enterParentMode" class="tab-btn parent-entry-btn" type="button">
+        <i>🔐</i>
+        <span>保護者</span>
+      </button>
+    </nav>
+
+    <nav class="tab-nav parent-nav" id="parentNav" aria-label="保護者メニュー" hidden>
+      <button class="tab-btn" data-tab="approval">
+        <i>✅</i>
+        <span>承認</span>
+      </button>
+      <button class="tab-btn" data-tab="log">
+        <i>📅</i>
+        <span>予定</span>
       </button>
       <button class="tab-btn" data-tab="setup">
         <i>⚙️</i>
-        <span>準備</span>
+        <span>設定</span>
       </button>
-      <button id="bottomAdultToggle" class="tab-btn adult-toggle-btn" type="button">
-        <div class="toggle-switch">
-          <div class="toggle-knob"></div>
-        </div>
-        <span>おとな</span>
+      <button class="tab-btn" data-tab="bank">
+        <i>💰</i>
+        <span>通帳</span>
+      </button>
+      <button class="tab-btn" data-tab="album">
+        <i>📔</i>
+        <span>成長</span>
+      </button>
+      <button class="tab-btn" data-tab="data">
+        <i>🗂️</i>
+        <span>データ</span>
+      </button>
+      <button id="exitParentMode" class="tab-btn parent-entry-btn" type="button">
+        <i>↩️</i>
+        <span>こども</span>
       </button>
     </nav>
 
@@ -68,8 +93,8 @@
       <div id="tab-today" class="tab-content is-active">
         <header class="board-header">
           <div class="header-main">
-            <h2 id="boardTitle">今日の冒険</h2>
-            <p id="boardSubtitle" class="board-sub">読み込み中...</p>
+            <h2 id="boardTitle">今日やること</h2>
+            <p id="boardSubtitle" class="board-sub">今日のお手伝いを準備しています。</p>
           </div>
           <div class="header-actions" style="display: flex; flex-direction: column; align-items: flex-end; gap: 8px;">
             <div class="header-status-pill" style="font-size: 0.85rem; color: var(--muted); background: var(--panel-soft); padding: 4px 12px; border-radius: 99px;">
@@ -78,13 +103,17 @@
           </div>
         </header>
 
+        <div id="kidQuickSwitch" class="kid-switch" aria-label="こどもの切り替え"></div>
+        <div id="dayQuickSwitch" class="day-switch" aria-label="曜日切り替え"></div>
+        <section id="parentActionPanel" class="parent-action-panel" hidden></section>
+
         <article class="today-hero">
           <div class="today-hero__main">
             <div class="total-reward-box">
               <span class="total-reward-label">今日のみんなのごほうび合計</span>
               <span class="total-reward-amount" id="todayTotalReward">¥0</span>
             </div>
-            <p class="today-hero__msg" id="todayCloudonMsg">今日も一歩ずつ進もう！</p>
+            <p class="today-hero__msg" id="todayCloudonMsg">上から順番にやってみよう。</p>
           </div>
           <div class="today-hero__stats">
             <div class="stat-item">
@@ -103,13 +132,28 @@
         </div>
       </div>
 
+      <!-- ✅ TAB: PARENT APPROVAL -->
+      <div id="tab-approval" class="tab-content parent-tab">
+        <section class="approval-center" aria-label="承認待ち">
+          <header class="approval-center__header">
+            <div>
+              <p class="control-panel__eyebrow">保護者の確認</p>
+              <h2>承認待ち</h2>
+              <p id="approvalSummaryText">今日の報告を確認します。</p>
+            </div>
+            <button id="approveAllParent" class="button primary" type="button">まとめて承認</button>
+          </header>
+          <div id="approvalList" class="approval-list"></div>
+        </section>
+      </div>
+
       <!-- 📅 TAB: LOG (Calendar) -->
       <div id="tab-log" class="tab-content">
         <section class="calendar-panel" aria-label="過去と未来のプラン">
           <div class="calendar-header">
             <div>
               <h2 id="calendarLabel">2024年4月</h2>
-              <p>日付をタップして冒険のプランを確認しよう！</p>
+              <p>日付をタップして、その日の予定と完了状況を確認できます。</p>
             </div>
             <div class="calendar-nav">
               <button data-calendar-nav="prev" type="button" aria-label="前の月">◀</button>
@@ -133,18 +177,18 @@
         <section class="summary-grid">
           <article class="summary-card summary-card--rpg">
             <div id="rpgAdventureWorld" class="rpg-world">
-              <!-- 背景とパスはJS/CSSで描画 -->
+              <!-- JSでほしいもの作戦ボードを生成 -->
               <div id="adventureRoadmap" class="adventure-roadmap"></div>
               
-              <!-- クエストログパネル（フロート） -->
+              <!-- 今週の記録パネル -->
               <div class="quest-log">
-                <p class="quest-log__eyebrow">QUEST LOG</p>
+                <p class="quest-log__eyebrow">今週の記録</p>
                 <h3 class="quest-log__title">今週の頑張り</h3>
                 <div class="progress-track" role="progressbar">
                   <div id="progressBar" class="progress-bar" style="width: 0%;"></div>
                 </div>
                 <p class="quest-log__text">
-                  獲得スター: <strong id="starsEarned">0</strong> / <span id="starsTarget">0</span>
+                  完了したお手伝い: <strong id="starsEarned">0</strong> / <span id="starsTarget">0</span>
                   (<span id="progressPercent">0%</span>)
                 </p>
               </div>
@@ -152,7 +196,7 @@
               <!-- ナビゲーター（クラウドん） -->
               <div class="rpg-navigator">
                 <img src="characters/char_cloudon.png" alt="クラウドん先生">
-                <div class="rpg-navigator__bubble">冒険に出発だ！☁️</div>
+                <div class="rpg-navigator__bubble">ほしいものに近づこう</div>
               </div>
             </div>
           </article>
@@ -177,32 +221,63 @@
             </div>
 
             <!-- 取引履歴 (通帳) -->
-            <div class="dashboard-section" style="margin-top: 32px; border-top: 1px solid var(--border); padding-top: 24px;">
-              <h4 class="dashboard-title" style="font-size: 1rem; color: var(--muted); margin-bottom: 16px;">冒険のきろく（通帳）</h4>
-              <ul id="transactionList" style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 8px; max-height: 200px; overflow-y: auto;">
+            <div class="dashboard-section bankbook-section">
+              <div class="bankbook-header">
+                <div>
+                  <h4 class="dashboard-title">通帳</h4>
+                  <p class="small-text">何で増えたか、取り消しまで子供ごとに確認できます。</p>
+                </div>
+              </div>
+              <div id="bankbookTabs" class="bankbook-tabs" aria-label="子供ごとの通帳"></div>
+              <div id="bankbookSummary" class="bankbook-summary"></div>
+              <ul id="transactionList" class="bankbook-list">
                 <!-- JSで履歴が生成される -->
               </ul>
             </div>
-            
-            <!-- 🎁 ガチャ＆コレクション -->
-            <div class="dashboard-section" style="margin-top: 32px; border-top: 1px solid var(--border); padding-top: 24px;">
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-                <h4 class="dashboard-title" style="font-size: 1rem; color: var(--muted);">🎁 ガチャ＆図鑑</h4>
-                <button id="btnOpenCollection" class="button secondary small">📖 図鑑をみる</button>
+          </article>
+        </section>
+      </div>
+
+      <!-- 📔 TAB: GROWTH ALBUM -->
+      <div id="tab-album" class="tab-content">
+        <section class="growth-album-panel" aria-label="成長アルバム">
+          <header class="growth-album-panel__header">
+            <div>
+              <p class="control-panel__eyebrow">GROWTH ALBUM</p>
+              <h2>成長アルバム</h2>
+              <p>承認されたお手伝いを、お金だけでなく成長の記録として残します。</p>
+            </div>
+          </header>
+          <div id="growthAlbumTabs" class="growth-album-tabs" aria-label="子供ごとの成長アルバム"></div>
+          <div id="growthAlbumSummary" class="growth-album-summary"></div>
+          <div id="growthAlbumList" class="growth-album-list"></div>
+        </section>
+      </div>
+
+      <!-- 🎁 TAB: REWARDS -->
+      <div id="tab-rewards" class="tab-content child-tab">
+        <section class="summary-grid">
+          <article class="summary-card summary-card--rewards">
+            <header class="rewards-header">
+              <div>
+                <h2>ごほうび</h2>
+                <p id="rewardPageLead">今日のがんばりで、ごほうびに近づこう。</p>
               </div>
-              <div id="gachaArea" class="gacha-area" style="display: flex; flex-direction: column; gap: 12px;">
-                <!-- JSでガチャボタン生成 -->
-              </div>
+              <button id="btnOpenCollection" class="button secondary small">図鑑</button>
+            </header>
+            <div id="rewardPromise" class="reward-promise"></div>
+            <div id="gachaArea" class="gacha-area">
+              <!-- JSでガチャボタン生成 -->
             </div>
           </article>
         </section>
 
-        <section class="special-content" data-has-day="false" aria-label="スペシャルコンテンツ">
-          <h2>クラウドん先生の冒険ガイド</h2>
+        <section class="special-content rewards-guide" data-has-day="false" aria-label="スペシャルコンテンツ">
+          <h2>今日のひとこと</h2>
           <div class="special-grid">
             <article class="special-card">
               <h3 class="special-card__title">今日のメッセージ</h3>
-              <p id="specialMessage" class="special-card__body">冒険の書を選択して、メッセージを受け取ろう！</p>
+              <p id="specialMessage" class="special-card__body">今日のお手伝いを選ぶと、メッセージが表示されます。</p>
               <p id="specialProgress" class="special-card__note"></p>
             </article>
             <article class="special-card">
@@ -218,10 +293,10 @@
         <section class="control-panel" id="editControlPanel" data-active="false" data-collapsed="false">
           <header class="control-panel__header">
             <div class="control-panel__heading">
-              <p class="control-panel__eyebrow">ADVENTURE SETUP</p>
-              <h2 class="control-panel__title">冒険の準備</h2>
+                <p class="control-panel__eyebrow">保護者設定</p>
+              <h2 class="control-panel__title">お手伝いの設定</h2>
               <p class="control-panel__text">
-                ヒーローの追加や、クエストの報酬（円）を自由にカスタマイズできます。
+                子ども、予定、報酬、ごほうびをまとめて管理できます。
               </p>
             </div>
             <button id="controlCollapse" class="button secondary small" type="button">
@@ -231,15 +306,32 @@
 
           <div id="controlPanelBody" class="control-panel__body">
             <div class="control-panel__planner">
+              <section class="plan-template-panel" id="planTemplatePanel" aria-label="週間予定テンプレート">
+                <div class="plan-template-panel__header">
+                  <div>
+                    <p class="control-panel__eyebrow">週間テンプレート</p>
+                    <h3>週間予定をすばやく作る</h3>
+                    <p id="planTemplateHint" class="small-text">よく使う形から1週間分を作れます。下の予定をタップすると、その日をコピー元にできます。</p>
+                  </div>
+                  <div class="plan-template-panel__status" id="planUnsetSummary">未設定を確認中...</div>
+                </div>
+                <div class="plan-template-actions">
+                  <button class="button primary" type="button" data-plan-template-action="copy-last-week">先週をコピー</button>
+                  <button class="button secondary" type="button" data-plan-template-action="copy-weekday">月曜を平日にコピー</button>
+                  <button class="button secondary" type="button" data-plan-template-action="copy-weekend">土曜を日曜にコピー</button>
+                  <button class="button secondary" type="button" data-plan-template-action="copy-everyday">選択中の日を毎日にコピー</button>
+                </div>
+                <div class="kid-template-list" id="kidTemplateList"></div>
+              </section>
               <div class="weekly-planner" id="weeklyPlanner">
                 <!-- JSでウィークリープランナーの表が生成される -->
               </div>
               <div class="planner-info">
-                <p class="small-text">※ セルをタップしてタスクを変更できます。横スクロールで全曜日を表示します。</p>
+                <p class="small-text">※ 予定をタップして、お手伝いを変更できます。</p>
               </div>
               <div class="control-panel__actions">
-                <button id="controlAutoDistribute" class="button secondary" type="button">自動でおまかせ配分</button>
-                <button id="controlClearWeek" class="button danger ghost" type="button">今週をすべてリセット</button>
+                <button id="controlAutoDistribute" class="button secondary" type="button">おまかせで作成</button>
+                <button id="controlClearWeek" class="button danger ghost" type="button">今週の予定をクリア</button>
               </div>
             </div>
 
@@ -248,26 +340,19 @@
               <h3 class="settings-title">⚙️ 全体の設定</h3>
               <div class="settings-grid">
             <div class="setting-item">
-              <label class="setting-label">1日のクエスト数</label>
+              <label class="setting-label">1日のお手伝い数</label>
               <div class="number-stepper">
                 <input type="number" id="settingSlotsPerKid" min="1" max="20" value="3" class="manager-input">
                 <span class="unit">個</span>
               </div>
             </div>
-            
-            <div class="setting-item">
-              <label class="setting-label">クラウド同期（家族で共有）</label>
-              <div class="sync-form">
-                <input type="text" id="syncFamilyId" placeholder="家族の合言葉を入力" class="manager-input">
-                <button id="btnStartSync" class="button primary small">同期開始</button>
-              </div>
-              <div id="syncStatus" class="sync-status">
-                <span class="status-dot"></span>
-                <span class="status-text">オフラインモード</span>
-              </div>
-            </div>
               </div>
               <p class="small-text">※ 変更すると即座に全ヒーローに反映されます</p>
+            </section>
+
+            <section class="global-settings-card reward-settings-card">
+              <h3 class="settings-title">ごほうび・ガチャ設定</h3>
+              <div id="rewardSettingsPanel" class="reward-settings-panel"></div>
             </section>
 
             <div class="control-panel__manager">
@@ -280,7 +365,7 @@
               </div>
               <div class="manager-block">
                 <div class="manager-header">
-                  <h3>クエスト（お手伝い）の設定</h3>
+                  <h3>お手伝いの設定</h3>
                   <button id="addTask" class="button primary small" type="button">＋ 追加</button>
                 </div>
                 <ul id="taskManager" class="manager-list"></ul>
@@ -290,35 +375,65 @@
         </section>
 
         <section class="task-library" aria-label="タスクの候補">
-          <h2>クエストライブラリ</h2>
-          <p class="task-library__hint">登録済みのクエスト一覧です。編集モードで使用できます。</p>
+          <h2>お手伝い一覧</h2>
+          <p class="task-library__hint">登録済みのお手伝いを確認できます。</p>
           <div id="taskLibrary" class="task-library__list"></div>
         </section>
 
         <div class="edit-banner" id="editBanner">
-          現在、冒険の準備（編集）モードです。
+          現在、保護者の設定モードです。
         </div>
       </div>
     </div>
 
-    <footer class="site-footer">
-      <div class="footer-actions">
-        <div class="footer-actions__group">
-          <button id="installApp" class="button primary" type="button" hidden>ホーム画面に追加</button>
-          <button id="exportData" class="button secondary" type="button">バックアップ</button>
-          <button id="importData" class="button ghost" type="button">復元</button>
-          <input id="importFile" type="file" accept="application/json" hidden aria-hidden="true">
+    <div id="tab-data" class="tab-content parent-tab">
+      <section class="data-management-panel">
+        <header>
+          <p class="control-panel__eyebrow">DATA MANAGEMENT</p>
+          <h2>データ管理</h2>
+          <p>バックアップ、復元、同期、リセットは保護者だけが操作します。</p>
+        </header>
+
+        <div class="data-actions-grid">
+          <article class="data-action-card">
+            <h3>バックアップと復元</h3>
+            <p>端末変更や万が一に備えて、家族データを保存できます。</p>
+            <div class="footer-actions__group">
+              <button id="installApp" class="button primary" type="button" hidden>ホーム画面に追加</button>
+              <button id="exportData" class="button secondary" type="button">バックアップ</button>
+              <button id="importData" class="button ghost" type="button">復元</button>
+              <input id="importFile" type="file" accept="application/json" hidden aria-hidden="true">
+            </div>
+          </article>
+
+          <article class="data-action-card">
+            <h3>家族ログイン</h3>
+            <p>同じ合言葉を使う端末で、家族のデータを共有します。</p>
+            <div class="sync-form">
+              <input type="text" id="syncFamilyId" placeholder="例: sato-family" class="manager-input">
+              <button id="btnStartSync" class="button primary small">家族ログイン</button>
+            </div>
+            <div id="syncStatus" class="sync-status">
+              <span class="status-dot"></span>
+              <span class="status-text">オフラインモード</span>
+            </div>
+          </article>
+
+          <article class="data-action-card data-action-card--danger">
+            <h3>リセット</h3>
+            <p>今週の完了状態だけをリセットします。子供画面には表示されません。</p>
+            <button id="resetAll" class="button danger" type="button">今週をリセット</button>
+          </article>
         </div>
-        <button id="resetAll" class="button danger" type="button">今週をリセット</button>
-      </div>
-      <p id="footerNote" class="footer-note"></p>
-    </footer>
+        <p id="footerNote" class="footer-note"></p>
+      </section>
+    </div>
   </div>
 
   <!-- 🎯 TASK PICKER MODAL -->
   <div id="taskPickerModal" class="modal-overlay">
     <div class="modal-content">
-      <h3>クエストを選択</h3>
+      <h3>お手伝いを選択</h3>
       <div id="taskPickerGrid" class="task-picker-grid">
         <!-- JSでタスク一覧が生成される -->
       </div>
@@ -328,7 +443,7 @@
     </div>
   </div>
 
-  <!-- 🎯 ADVENTURE EVENT MODAL -->
+  <!-- 🎯 GOAL EVENT MODAL -->
   <div id="eventModal" class="modal-overlay">
     <div class="modal-content modal-content--event">
       <div id="eventModalBody" class="event-modal-body">
@@ -345,7 +460,7 @@
         <div id="gachaResultIcon" class="gacha-result-icon"></div>
         <h2 id="gachaResultName" class="gacha-result-name"></h2>
         <p id="gachaResultDesc" class="gacha-result-desc"></p>
-        <button class="button primary" style="margin-top: 24px;" onclick="document.getElementById('gachaModal').classList.remove('is-active')">図鑑にしまう</button>
+        <button class="button primary" style="margin-top: 18px;" onclick="document.getElementById('gachaModal').classList.remove('is-active')">OK</button>
       </div>
     </div>
   </div>
@@ -354,7 +469,7 @@
   <div id="collectionModal" class="modal-overlay">
     <div class="modal-content" style="max-width: 600px;">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-        <h3>冒険の図鑑 📖</h3>
+        <h3>ごほうび図鑑</h3>
         <button class="button secondary small" onclick="document.getElementById('collectionModal').classList.remove('is-active')">閉じる</button>
       </div>
       <div id="collectionTabs" style="display: flex; gap: 8px; margin-bottom: 16px;">
@@ -367,9 +482,7 @@
   </div>
 
   <!-- Scripts -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
-  <script src="app.js?v=21"></script>
+    <script src="app.js?v=52"></script>
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {

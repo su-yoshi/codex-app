@@ -1,0 +1,17 @@
+.git
+.env
+.vscode
+node_modules
+dist
+data
+tmp-audit
+*.pyc
+__pycache__
+clean_avatars.py
+clean_avatars_v2.py
+crop_cloudon.py
+make_pro_avatars.py
+process_all_characters.py
+process_all_characters_v2.py
+char_cloudon_restored.png
+素材

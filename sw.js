@@ -1,12 +1,11 @@
 
-const CACHE_NAME = 'kids-planner-cache-v20';
+const CACHE_NAME = 'kids-planner-cache-v55';
 const APP_SHELL = [
   './index.html',
   './manifest.webmanifest',
   './sw.js',
   './styles.css',
   './app.js',
-  './app_script.js',
   './workflow_code.js',
   './icons/icon-192.png',
   './icons/icon-512.png'
@@ -38,6 +37,11 @@ self.addEventListener('fetch', (event) => {
 
   const { request } = event;
   const url = new URL(request.url);
+
+  if (url.origin === location.origin && url.pathname.startsWith('/api/')) {
+    event.respondWith(fetch(request));
+    return;
+  }
 
   if (request.mode === 'navigate' || (request.destination === 'document' && url.origin === location.origin)) {
     event.respondWith(handlePageRequest(request));
