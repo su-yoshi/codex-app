@@ -356,7 +356,7 @@
   function render() {
     if (!state.weekData) return;
     const kidsSynced = syncWeekDataWithKids();
-    const tasksCleaned = cleanupSlotsForMissingTasks();
+    const tasksCleaned = cleanupInvalidTaskReferences();
     ensureControlSelectionValid();
     
     updateWeekLabel();
@@ -381,6 +381,7 @@
     updateFooterControls();
     updateControlPanelCollapse();
     
+    if (tasksCleaned) saveConfig();
     if (kidsSynced || tasksCleaned) saveWeekData();
   }
 
@@ -1721,6 +1722,7 @@
         if (cloud.config) {
           kids = normalizeKids(cloud.config.kids);
           tasks = normalizeTasks(cloud.config.tasks);
+          refreshTaskLookup();
           SLOTS_PER_KID = cloud.config.slotsPerKid || 3;
           state.kidPlanTemplates = cloud.config.kidPlanTemplates || {};
           state.rewardSettings = normalizeRewardSettings(cloud.config.rewardSettings);
@@ -1730,12 +1732,17 @@
         if (cloud.weekKey === state.weekKey && cloud.weekData) {
           state.weekData = cloud.weekData;
         }
+        const cleaned = cleanupInvalidTaskReferences();
         
         if (isInitial) {
           saveConfig();
           saveWeekData();
           render();
         } else {
+          if (cleaned) {
+            saveConfig();
+            saveWeekData();
+          }
           render();
         }
         updateSyncUI('online');
@@ -2976,7 +2983,9 @@
       if (!confirm('削除しますか？')) return;
       tasks = tasks.filter(t => t.id !== taskId);
       refreshTaskLookup();
+      cleanupInvalidTaskReferences();
       saveConfig();
+      saveWeekData();
       render();
     }
   }
@@ -3912,6 +3921,7 @@
 
   function cleanupSlotsForMissingTasks() {
     let changed = false;
+    if (!state.weekData || !Array.isArray(state.weekData.days)) return false;
     state.weekData.days.forEach(day => {
       Object.keys(day.slots).forEach(kId => {
         day.slots[kId].forEach(s => {
@@ -3923,6 +3933,41 @@
         });
       });
     });
+    return changed;
+  }
+
+  function cleanupInvalidTaskReferences() {
+    let changed = false;
+    if (cleanupSlotsForMissingTasks()) changed = true;
+    if (cleanupKidPlanTemplatesForMissingTasks()) changed = true;
+    return changed;
+  }
+
+  function cleanupKidPlanTemplatesForMissingTasks() {
+    let changed = false;
+    const templates = state.kidPlanTemplates || {};
+    Object.keys(templates).forEach(kidId => {
+      const template = templates[kidId];
+      if (!Array.isArray(template)) {
+        delete templates[kidId];
+        changed = true;
+        return;
+      }
+      template.forEach((daySlots, dayIndex) => {
+        if (!Array.isArray(daySlots)) {
+          template[dayIndex] = [];
+          changed = true;
+          return;
+        }
+        daySlots.forEach((taskId, slotIndex) => {
+          if (taskId && !validTaskIds.has(taskId)) {
+            daySlots[slotIndex] = null;
+            changed = true;
+          }
+        });
+      });
+    });
+    state.kidPlanTemplates = templates;
     return changed;
   }
 
