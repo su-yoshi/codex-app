@@ -1314,7 +1314,9 @@
       if (!entry) return;
       entry.parentComment = trimmed;
       entry.updatedAt = new Date().toISOString();
+      week.updatedAt = entry.updatedAt;
       localStorage.setItem(key, JSON.stringify(week));
+      if (state.familyId) saveToCloud();
     } catch (e) {}
   }
 
@@ -1681,6 +1683,7 @@
 
   function saveWeekData() {
     if (!storageAvailable || !state.weekData || !state.weekKey) return;
+    state.weekData.updatedAt = new Date().toISOString();
     localStorage.setItem(STORAGE_PREFIX + state.weekKey, JSON.stringify(state.weekData));
     if (state.familyId) saveToCloud();
   }
@@ -1689,11 +1692,7 @@
   async function saveToCloud() {
     if (!state.familyId) return;
     try {
-      const allData = {
-        config: { kids, tasks, slotsPerKid: SLOTS_PER_KID, kidPlanTemplates: state.kidPlanTemplates, rewardSettings: state.rewardSettings },
-        weekKey: state.weekKey,
-        weekData: state.weekData
-      };
+      const allData = buildSyncSnapshot();
       const res = await fetch(`/api/sync/${encodeURIComponent(state.familyId)}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -1728,11 +1727,11 @@
           state.rewardSettings = normalizeRewardSettings(cloud.config.rewardSettings);
         }
 
-        // 週データの同期
-        if (cloud.weekKey === state.weekKey && cloud.weekData) {
-          state.weekData = cloud.weekData;
-        }
+        const weekMerged = restoreSyncedWeeks(cloud);
         const cleaned = cleanupInvalidTaskReferences();
+        if (weekMerged || cleaned) {
+          state.weekData = loadWeekData(state.weekKey, state.weekStart);
+        }
         
         if (isInitial) {
           saveConfig();
@@ -1755,6 +1754,94 @@
       updateSyncUI('error');
       return false;
     }
+  }
+
+  function buildSyncSnapshot() {
+    return {
+      version: 2,
+      updatedAt: new Date().toISOString(),
+      config: {
+        kids,
+        tasks,
+        slotsPerKid: SLOTS_PER_KID,
+        familyId: state.familyId,
+        kidPlanTemplates: state.kidPlanTemplates,
+        rewardSettings: state.rewardSettings
+      },
+      currentWeekKey: state.weekKey,
+      weeks: collectStoredWeeksForSync()
+    };
+  }
+
+  function collectStoredWeeksForSync() {
+    const weeks = {};
+    if (!storageAvailable) return weeks;
+
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (!key || !key.startsWith(STORAGE_PREFIX)) continue;
+      try {
+        const week = JSON.parse(localStorage.getItem(key));
+        if (week) weeks[key] = normalizeWeekForSync(week);
+      } catch (e) {}
+    }
+
+    if (state.weekKey && state.weekData) {
+      weeks[STORAGE_PREFIX + state.weekKey] = normalizeWeekForSync(state.weekData);
+    }
+
+    return weeks;
+  }
+
+  function normalizeWeekForSync(week) {
+    const normalized = { ...(week || {}) };
+    if (!normalized.updatedAt) normalized.updatedAt = new Date().toISOString();
+    return normalized;
+  }
+
+  function restoreSyncedWeeks(cloud) {
+    if (!storageAvailable || !cloud) return false;
+    let changed = false;
+
+    const cloudWeeks = cloud.weeks && typeof cloud.weeks === 'object'
+      ? cloud.weeks
+      : cloud.weekKey && cloud.weekData
+        ? { [STORAGE_PREFIX + cloud.weekKey]: cloud.weekData }
+        : {};
+
+    Object.entries(cloudWeeks).forEach(([rawKey, cloudWeek]) => {
+      if (!cloudWeek) return;
+      const key = normalizeWeekStorageKey(rawKey);
+      if (!key) return;
+
+      const cloudUpdatedAt = getWeekUpdatedAt(cloudWeek);
+      let localWeek = null;
+      try {
+        const rawLocal = localStorage.getItem(key);
+        if (rawLocal) localWeek = JSON.parse(rawLocal);
+      } catch (e) {}
+
+      const localUpdatedAt = getWeekUpdatedAt(localWeek);
+      if (!localWeek || cloudUpdatedAt >= localUpdatedAt) {
+        localStorage.setItem(key, JSON.stringify(normalizeWeekForSync(cloudWeek)));
+        changed = true;
+      }
+    });
+
+    return changed;
+  }
+
+  function normalizeWeekStorageKey(key) {
+    const raw = String(key || '').trim();
+    if (!raw) return '';
+    return raw.startsWith(STORAGE_PREFIX) ? raw : STORAGE_PREFIX + raw.replace(STORAGE_PREFIX, '');
+  }
+
+  function getWeekUpdatedAt(week) {
+    if (!week) return 0;
+    const value = week.updatedAt || week.modifiedAt || week.timestamp || '';
+    const time = value ? new Date(value).getTime() : 0;
+    return Number.isFinite(time) ? time : 0;
   }
 
   function updateSyncUI(status) {

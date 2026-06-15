@@ -7,7 +7,7 @@ from urllib.request import Request, urlopen
 
 
 TMP_DIR = Path("/tmp/kids-money-planner-sync")
-MAX_BODY_BYTES = 2 * 1024 * 1024
+MAX_BODY_BYTES = 6 * 1024 * 1024
 
 
 def _json_response(handler, status, payload):
