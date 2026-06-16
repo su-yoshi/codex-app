@@ -20,11 +20,12 @@
   const DEFAULT_KID_COLORS = ['#8363ff', '#22c1e5', '#ff6b6b', '#ffd93d', '#6bcb77'];
 
   const CHARACTERS = {
-    cloudon: { name: 'クラウドん', img: 'characters/char_cloudon.png?v=13', quotes: { none: 'いっしょにお金の勉強をしよう！', start: '今日もお手伝いがんばろう☁️', mid: 'その調子！応援しているよ☁️', done: 'コンプリート！すごいね☁️✨' } },
-    kakeru: { name: 'カケル', img: 'characters/char_kakeru.png?v=13', quotes: { none: '今日のお手伝いを見てみよう。', start: '上から順番にやってみよう。', mid: 'あと少し。いいペースだよ。', done: '今日のお手伝い、全部できたね。' } },
-    logico: { name: 'ロジコ', img: 'characters/char_logico.png?v=13', quotes: { none: '計画的に進めるのがコツだよ。', start: 'まずは今日の予定を確認しよう。', mid: '半分クリア。順調だね。', done: '素晴らしい。完璧な仕事だよ。' } },
-    kirara: { name: 'キララ', img: 'characters/char_kirara.png?v=13', quotes: { none: 'キラキラな毎日にしよう♪', start: '今日もハッピーにお手伝♪', mid: 'がんばり屋さんなキミが好き！', done: 'キラキラ！全部達成だね♪' } }
+    cloudon: { name: 'クラウドん', img: 'characters/ip_cloudon.png?v=1', quotes: { none: 'いっしょにお金の勉強をしよう！', start: '今日もお手伝いがんばろう☁️', mid: 'その調子！応援しているよ☁️', done: 'コンプリート！すごいね☁️✨' } },
+    kakeru: { name: 'カケル', img: 'characters/ip_kakeru.png?v=1', quotes: { none: '今日のお手伝いを見てみよう。', start: '上から順番にやってみよう。', mid: 'あと少し。いいペースだよ。', done: '今日のお手伝い、全部できたね。' } },
+    logico: { name: 'ロジコ', img: 'characters/ip_logico.png?v=1', quotes: { none: '計画的に進めるのがコツだよ。', start: 'まずは今日の予定を確認しよう。', mid: '半分クリア。順調だね。', done: '素晴らしい。完璧な仕事だよ。' } },
+    kirara: { name: 'キララ', img: 'characters/ip_kirara.png?v=1', quotes: { none: 'キラキラな毎日にしよう♪', start: '今日もハッピーにお手伝♪', mid: 'がんばり屋さんなキミが好き！', done: 'キラキラ！全部達成だね♪' } }
   };
+  const FAMILY_IMAGE_SRC = 'characters/ip_family.jpg?v=1';
 
   const REWARD_TIERS = [
     { points: 0, title: 'はじめての目標', reward: 'まずはお手伝いを10個やってみよう！', hint: '家族で最初のごほうびを相談してね' },
@@ -406,7 +407,41 @@
     
     updateBoardHeading(day);
     updateSpecialContent(day);
+    if (state.appMode === 'child') {
+      elements.cardsContainer.appendChild(createFamilyHero(day));
+    }
     elements.cardsContainer.appendChild(createDayCard(day, state.controlSelection.dayIndex));
+  }
+
+  function createFamilyHero(day) {
+    const hero = document.createElement('section');
+    const activeKid = getActiveKid();
+    const summary = activeKid ? summarizeKidDay(day, activeKid.id) : summarizeDayDetailed(day);
+    const char = CHARACTERS[activeKid && activeKid.characterId] || CHARACTERS.cloudon;
+    const kidName = activeKid ? activeKid.name : 'みんな';
+    const lead = summary.todo > 0
+      ? `あと${summary.todo}こ。上から1つずつ進めよう。`
+      : summary.pending > 0
+        ? 'おうちの人の確認を待とう。承認されたら貯金に入るよ。'
+        : summary.total > 0
+          ? '今日のぶんは完了。できたことを家族で見返そう。'
+          : '今日は予定がありません。できたお手伝いがあれば報告できます。';
+    hero.className = 'ip-family-hero';
+    hero.innerHTML = `
+      <div class="ip-family-hero__photo">
+        <img src="${FAMILY_IMAGE_SRC}" alt="クラウドんファミリー">
+      </div>
+      <div class="ip-family-hero__body">
+        <span class="ip-family-hero__eyebrow">クラウドんファミリー</span>
+        <h2>${escapeHtml(kidName)}の作戦ボード</h2>
+        <p>${escapeHtml(lead)}</p>
+        <div class="ip-family-hero__guide">
+          <span class="ip-family-hero__avatar"><img src="${char.img}" alt="${escapeHtml(char.name)}"></span>
+          <span>${escapeHtml(char.name)}が今日のお手伝いを見守っているよ</span>
+        </div>
+      </div>
+    `;
+    return hero;
   }
 
   function renderDayQuickSwitch() {
@@ -1607,7 +1642,7 @@
         <div class="event-icon-large">${landmark.icon}</div>
         <h2 class="event-title">${landmark.name}</h2>
         <div class="event-cloudon">
-          <img src="characters/char_cloudon.png?v=13" alt="クラウドん先生">
+          <img src="characters/ip_cloudon.png?v=1" alt="クラウドん先生">
           <div class="event-bubble">
             <p>${landmark.msg}</p>
           </div>
