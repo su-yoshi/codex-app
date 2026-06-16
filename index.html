@@ -13,7 +13,7 @@
     <link rel="icon" href="icons/icon-192.png">
     
     <!-- Styles -->
-      <link rel="stylesheet" href="styles.css?v=48">
+      <link rel="stylesheet" href="styles.css?v=49">
 </head>
 <body>
   <div class="app">
@@ -443,6 +443,21 @@
     </div>
   </div>
 
+  <!-- ✅ QUICK REPORT MODAL -->
+  <div id="quickReportModal" class="modal-overlay">
+    <div class="modal-content quick-report-modal">
+      <h3>おてつだいしたよ！</h3>
+      <p id="quickReportSubtitle" class="quick-report-subtitle">今日やったお手伝いを選んでね。</p>
+      <div id="quickReportGrid" class="quick-report-grid">
+        <!-- JSで複数選択リストを生成 -->
+      </div>
+      <div class="modal-actions quick-report-actions">
+        <button id="closeQuickReport" class="button secondary" type="button">キャンセル</button>
+        <button id="confirmQuickReport" class="button primary" type="button">選んだものを報告</button>
+      </div>
+    </div>
+  </div>
+
   <!-- 🎯 GOAL EVENT MODAL -->
   <div id="eventModal" class="modal-overlay">
     <div class="modal-content modal-content--event">
@@ -482,7 +497,7 @@
   </div>
 
   <!-- Scripts -->
-    <script src="app.js?v=56"></script>
+    <script src="app.js?v=57"></script>
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {

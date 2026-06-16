@@ -238,6 +238,11 @@
       taskPickerModal: document.getElementById('taskPickerModal'),
       taskPickerGrid: document.getElementById('taskPickerGrid'),
       closeTaskPicker: document.getElementById('closeTaskPicker'),
+      quickReportModal: document.getElementById('quickReportModal'),
+      quickReportGrid: document.getElementById('quickReportGrid'),
+      quickReportSubtitle: document.getElementById('quickReportSubtitle'),
+      closeQuickReport: document.getElementById('closeQuickReport'),
+      confirmQuickReport: document.getElementById('confirmQuickReport'),
       kidManager: document.getElementById('kidManager'),
       addKid: document.getElementById('addKid'),
       taskManager: document.getElementById('taskManager'),
@@ -713,6 +718,18 @@
           </div>
         </div>
         
+        ${!state.editMode ? `
+          <div class="quick-report-card">
+            <div>
+              <strong>予定にないお手伝いも記録できます</strong>
+              <span>やったものをまとめて選んで、おうちの人に報告しよう。</span>
+            </div>
+            <button class="quick-report-button" type="button" data-action="open-quick-report" data-kid-id="${kid.id}">
+              おてつだいしたよ！
+            </button>
+          </div>
+        ` : ''}
+
         <div class="chore-list">
           ${sortedSlots.length ? sortedSlots.map(({ slot, slotIndex }) => {
             const task = slot.taskId ? taskMap.get(slot.taskId) : null;
@@ -2075,6 +2092,12 @@
 
     if (elements.cardsContainer) {
       elements.cardsContainer.addEventListener('click', event => {
+        const quickReportButton = event.target.closest('[data-action="open-quick-report"]');
+        if (quickReportButton) {
+          openQuickReportModal(quickReportButton.dataset.kidId);
+          return;
+        }
+
         const slotEl = event.target.closest('.slot');
         if (!slotEl) return;
         
@@ -2164,6 +2187,17 @@
       elements.taskPickerModal.addEventListener('click', e => {
         if (e.target === elements.taskPickerModal) closeTaskPicker();
       });
+    }
+    if (elements.closeQuickReport) {
+      elements.closeQuickReport.addEventListener('click', closeQuickReportModal);
+    }
+    if (elements.quickReportModal) {
+      elements.quickReportModal.addEventListener('click', e => {
+        if (e.target === elements.quickReportModal) closeQuickReportModal();
+      });
+    }
+    if (elements.confirmQuickReport) {
+      elements.confirmQuickReport.addEventListener('click', confirmQuickReport);
     }
 
     // 設定画面：追加ボタン
@@ -3986,18 +4020,13 @@
         if (!day.slots[kid.id]) {
           day.slots[kid.id] = Array.from({ length: SLOTS_PER_KID }, () => ({ taskId: null, status: 'unset', earnedTxId: null }));
           changed = true;
-        } else if (day.slots[kid.id].length !== SLOTS_PER_KID) {
+        } else if (day.slots[kid.id].length < SLOTS_PER_KID) {
           // スロット数が変更された場合
           const currentSlots = day.slots[kid.id];
-          if (currentSlots.length < SLOTS_PER_KID) {
-            // 足りない分を追加
-            const diff = SLOTS_PER_KID - currentSlots.length;
-            for (let i = 0; i < diff; i++) {
-              currentSlots.push({ taskId: null, status: 'unset', earnedTxId: null });
-            }
-          } else {
-            // 多い分を削除（データ保護のため、設定済みのタスクがない末尾から削るのが理想だが、シンプルに slice）
-            day.slots[kid.id] = currentSlots.slice(0, SLOTS_PER_KID);
+          // 足りない分を追加。予定外報告で増えたスロットは履歴保護のため削らない。
+          const diff = SLOTS_PER_KID - currentSlots.length;
+          for (let i = 0; i < diff; i++) {
+            currentSlots.push({ taskId: null, status: 'unset', earnedTxId: null });
           }
           changed = true;
         }
@@ -4730,6 +4759,114 @@
   function closeTaskPicker() {
     elements.taskPickerModal.classList.remove('is-active');
     elements.taskPickerGrid.onclick = null;
+  }
+
+  function openQuickReportModal(kidId) {
+    if (!elements.quickReportModal || !elements.quickReportGrid) return;
+    const kid = kids.find(item => item.id === kidId) || getActiveKid();
+    if (!kid) return;
+    state.quickReportKidId = kid.id;
+
+    if (elements.quickReportSubtitle) {
+      elements.quickReportSubtitle.textContent = `${kid.name}が今日やったお手伝いを選んでください。`;
+    }
+
+    elements.quickReportGrid.innerHTML = tasks.map(task => {
+      const status = getTodayTaskReportStatus(kid.id, task.id);
+      const isReported = status === 'pending' || status === 'done';
+      const badge = status === 'done'
+        ? '承認済み'
+        : status === 'pending'
+          ? '確認中'
+          : status === 'todo'
+            ? '予定あり'
+            : '未報告';
+      return `
+        <label class="quick-report-option ${isReported ? 'is-reported' : ''}">
+          <input type="checkbox" value="${task.id}" ${isReported ? 'disabled' : ''}>
+          <span class="quick-report-option__icon">${task.icon || '⭐'}</span>
+          <span class="quick-report-option__main">
+            <strong>${escapeHtml(task.label)}</strong>
+            <small>ごほうび ¥${Number(task.reward || 0).toLocaleString()}</small>
+          </span>
+          <span class="quick-report-option__badge">${badge}</span>
+        </label>
+      `;
+    }).join('');
+
+    elements.quickReportModal.classList.add('is-active');
+  }
+
+  function closeQuickReportModal() {
+    if (!elements.quickReportModal) return;
+    elements.quickReportModal.classList.remove('is-active');
+    state.quickReportKidId = '';
+  }
+
+  function confirmQuickReport() {
+    if (!elements.quickReportGrid || !state.quickReportKidId) return;
+    const selectedTaskIds = Array.from(elements.quickReportGrid.querySelectorAll('input[type="checkbox"]:checked'))
+      .map(input => input.value)
+      .filter(Boolean);
+    if (!selectedTaskIds.length) {
+      alert('報告するお手伝いを選んでください。');
+      return;
+    }
+
+    const result = reportTasksForToday(state.quickReportKidId, selectedTaskIds);
+    closeQuickReportModal();
+    render();
+    showGoalToast(`報告しました: ${result.reported}こ${result.skipped ? `（済み ${result.skipped}こ）` : ''}`, false);
+  }
+
+  function getTodayTaskReportStatus(kidId, taskId) {
+    const day = state.weekData && state.weekData.days[state.controlSelection.dayIndex];
+    const slots = (day && day.slots[kidId]) || [];
+    const matched = slots.find(slot => slot.taskId === taskId && slot.status && slot.status !== 'unset');
+    return matched ? matched.status : 'unset';
+  }
+
+  function reportTasksForToday(kidId, taskIds) {
+    const day = state.weekData && state.weekData.days[state.controlSelection.dayIndex];
+    if (!day || !day.slots[kidId]) return { reported: 0, skipped: taskIds.length };
+
+    let reported = 0;
+    let skipped = 0;
+    taskIds.forEach(taskId => {
+      const result = reportTaskForDay(day, kidId, taskId);
+      if (result) reported++;
+      else skipped++;
+    });
+
+    if (reported) {
+      saveConfig();
+      saveWeekData();
+    }
+    return { reported, skipped };
+  }
+
+  function reportTaskForDay(day, kidId, taskId) {
+    if (!validTaskIds.has(taskId)) return false;
+    const slots = day.slots[kidId] || [];
+    let slot = slots.find(item => item.taskId === taskId && item.status !== 'done' && item.status !== 'pending');
+    if (!slot) {
+      const existingReported = slots.find(item => item.taskId === taskId && (item.status === 'done' || item.status === 'pending'));
+      if (existingReported) return false;
+      slot = slots.find(item => !item.taskId || item.status === 'unset');
+    }
+    if (!slot) {
+      slot = { taskId: null, status: 'unset', earnedTxId: null, growthAlbumId: null, reportedAt: null, approvedAt: null };
+      slots.push(slot);
+      day.slots[kidId] = slots;
+    }
+
+    slot.taskId = taskId;
+    slot.status = 'pending';
+    slot.earnedTxId = null;
+    slot.growthAlbumId = null;
+    slot.reportedAt = new Date().toISOString();
+    slot.approvedAt = null;
+    return true;
   }
 
   function renderTaskLibrary() {
