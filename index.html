@@ -13,7 +13,7 @@
     <link rel="icon" href="icons/icon-192.png">
     
     <!-- Styles -->
-      <link rel="stylesheet" href="styles.css?v=50">
+      <link rel="stylesheet" href="styles.css?v=51">
 </head>
 <body>
   <div class="app">
@@ -160,6 +160,7 @@
               <button data-calendar-nav="next" type="button" aria-label="次の月">▶</button>
             </div>
           </div>
+          <div id="calendarMonthSummary" class="calendar-month-summary"></div>
           <div class="calendar-weekdays">
             <span>日</span><span>月</span><span>火</span><span>水</span><span>木</span><span>金</span><span>土</span>
           </div>
@@ -497,7 +498,7 @@
   </div>
 
   <!-- Scripts -->
-    <script src="app.js?v=58"></script>
+    <script src="app.js?v=59"></script>
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {

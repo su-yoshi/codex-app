@@ -197,6 +197,8 @@
       progressBar: document.getElementById('progressBar'),
       calendarLabel: document.getElementById('calendarLabel'),
       calendarGrid: document.getElementById('calendarGrid'),
+      calendarMonthSummary: document.getElementById('calendarMonthSummary'),
+      calendarDetail: document.getElementById('calendarDetail'),
       boardTitle: document.getElementById('boardTitle'),
       boardSubtitle: document.getElementById('boardSubtitle'),
       specialSection: document.querySelector('.special-content'),
@@ -2291,6 +2293,28 @@
         const cell = e.target.closest('.calendar-cell');
         if (!cell || !cell.dataset.date) return;
         showCalendarDetail(cell.dataset.date);
+      });
+    }
+    if (elements.calendarDetail) {
+      elements.calendarDetail.addEventListener('click', e => {
+        const action = e.target.closest('[data-calendar-detail-action]');
+        if (!action) return;
+        const dateISO = action.dataset.date;
+        if (!dateISO) return;
+        const clickedDate = parseISO(dateISO);
+        const dayIndex = clickedDate.getDay();
+        goToWeekSpecific(clickedDate, dayIndex);
+        if (action.dataset.calendarDetailAction === 'setup') {
+          state.appMode = 'parent';
+          state.editMode = true;
+          updateAppMode();
+          switchTab('setup');
+        } else {
+          state.appMode = 'child';
+          state.editMode = false;
+          updateAppMode();
+          switchTab('today');
+        }
       });
     }
 
@@ -4586,6 +4610,12 @@
     const end = new Date(lastDay);
     end.setDate(end.getDate() + (6 - end.getDay()));
     
+    renderCalendarMonthSummary(firstDay, lastDay);
+    if (elements.calendarDetail) {
+      elements.calendarDetail.style.display = 'none';
+      elements.calendarDetail.innerHTML = '';
+    }
+
     let html = '';
     const temp = new Date(start);
     while (temp <= end) {
@@ -4597,23 +4627,130 @@
       const weekKeyForDay = buildWeekKey(weekStartForDay);
       const weekDataForDay = (weekKeyForDay === state.weekKey) ? state.weekData : loadWeekData(weekKeyForDay, weekStartForDay);
       const dayData = weekDataForDay.days.find(d => d.dateISO === iso);
-      const summary = dayData ? summarizeDay(dayData) : { done: 0, total: 0 };
+      const summary = dayData ? summarizeCalendarDay(dayData) : createEmptyCalendarSummary();
+      const progress = summary.total ? Math.round((summary.done / summary.total) * 100) : 0;
+      const statusClass = !summary.total ? 'is-unset' : summary.pending ? 'has-pending' : summary.done === summary.total ? 'is-complete' : 'has-plan';
       
-      let starsHtml = '';
-      if (summary.total > 0) {
-        const starCount = Math.ceil((summary.done / summary.total) * 3); // 最大3つ
-        for(let i=0; i<starCount; i++) starsHtml += '<span class="calendar-star">⭐</span>';
-      }
+      const kidPills = summary.byKid
+        .filter(item => item.total > 0)
+        .slice(0, 3)
+        .map(item => `<span class="calendar-kid-pill" style="--kid-color:${item.kid.color}">${escapeHtml(item.kid.name)} ${item.done}/${item.total}</span>`)
+        .join('');
 
       html += `
-        <div class="calendar-cell ${!isCurrentMonth ? 'calendar-cell--muted' : ''} ${isToday ? 'calendar-cell--today' : ''}" data-date="${iso}">
-          <span class="calendar-cell__date">${temp.getDate()}</span>
-          <div class="calendar-star-grid">${starsHtml}</div>
+        <div class="calendar-cell ${statusClass} ${!isCurrentMonth ? 'calendar-cell--muted' : ''} ${isToday ? 'calendar-cell--today' : ''}" data-date="${iso}">
+          <div class="calendar-cell__top">
+            <span class="calendar-cell__date">${temp.getDate()}</span>
+            ${isToday ? '<span class="calendar-today-label">今日</span>' : ''}
+          </div>
+          ${summary.total ? `
+            <div class="calendar-cell__score">
+              <strong>${summary.done}/${summary.total}</strong>
+              <span>完了</span>
+            </div>
+            <div class="calendar-progress-bar"><span style="width:${progress}%"></span></div>
+            <div class="calendar-cell__badges">
+              ${summary.pending ? `<span class="calendar-badge calendar-badge--pending">確認 ${summary.pending}</span>` : ''}
+              ${summary.todo ? `<span class="calendar-badge">予定 ${summary.todo}</span>` : ''}
+              ${summary.totalReward ? `<span class="calendar-badge calendar-badge--money">¥${summary.totalReward.toLocaleString()}</span>` : ''}
+            </div>
+            <div class="calendar-kid-pills">${kidPills}</div>
+          ` : `
+            <div class="calendar-empty-badge">未設定</div>
+          `}
         </div>
       `;
       temp.setDate(temp.getDate() + 1);
     }
     elements.calendarGrid.innerHTML = html;
+  }
+
+  function createEmptyCalendarSummary() {
+    return { total: 0, done: 0, pending: 0, todo: 0, totalReward: 0, pendingReward: 0, byKid: [] };
+  }
+
+  function summarizeCalendarDay(day) {
+    const summary = createEmptyCalendarSummary();
+    summary.byKid = kids.map(kid => {
+      const slots = (day && day.slots[kid.id]) || [];
+      const item = { kid, total: 0, done: 0, pending: 0, todo: 0, reward: 0 };
+      slots.forEach(slot => {
+        if (!slot.taskId) return;
+        const task = taskMap.get(slot.taskId);
+        item.total++;
+        summary.total++;
+        if (slot.status === 'done') {
+          item.done++;
+          summary.done++;
+          if (task) {
+            item.reward += task.reward || 0;
+            summary.totalReward += task.reward || 0;
+          }
+        } else if (slot.status === 'pending') {
+          item.pending++;
+          summary.pending++;
+          if (task) summary.pendingReward += task.reward || 0;
+        } else {
+          item.todo++;
+          summary.todo++;
+        }
+      });
+      return item;
+    });
+    return summary;
+  }
+
+  function renderCalendarMonthSummary(firstDay, lastDay) {
+    if (!elements.calendarMonthSummary) return;
+    const monthSummary = createEmptyCalendarSummary();
+    let unsetDays = 0;
+    let activeDays = 0;
+    const temp = new Date(firstDay);
+    while (temp <= lastDay) {
+      const dayData = getCalendarDayData(temp);
+      const daySummary = dayData ? summarizeCalendarDay(dayData) : createEmptyCalendarSummary();
+      if (daySummary.total) activeDays++;
+      else unsetDays++;
+      monthSummary.total += daySummary.total;
+      monthSummary.done += daySummary.done;
+      monthSummary.pending += daySummary.pending;
+      monthSummary.todo += daySummary.todo;
+      monthSummary.totalReward += daySummary.totalReward;
+      monthSummary.pendingReward += daySummary.pendingReward;
+      temp.setDate(temp.getDate() + 1);
+    }
+    const progress = monthSummary.total ? Math.round((monthSummary.done / monthSummary.total) * 100) : 0;
+    elements.calendarMonthSummary.innerHTML = `
+      <div class="calendar-summary-card">
+        <span>今月の予定</span>
+        <strong>${monthSummary.total}件</strong>
+      </div>
+      <div class="calendar-summary-card">
+        <span>完了</span>
+        <strong>${monthSummary.done}件</strong>
+      </div>
+      <div class="calendar-summary-card">
+        <span>承認待ち</span>
+        <strong>${monthSummary.pending}件</strong>
+      </div>
+      <div class="calendar-summary-card">
+        <span>獲得済み</span>
+        <strong>¥${monthSummary.totalReward.toLocaleString()}</strong>
+      </div>
+      <div class="calendar-summary-card calendar-summary-card--wide">
+        <span>月間進捗</span>
+        <strong>${progress}%</strong>
+        <small>未設定 ${unsetDays}日 / 予定あり ${activeDays}日</small>
+      </div>
+    `;
+  }
+
+  function getCalendarDayData(date) {
+    const weekStartForDay = startOfWeek(date);
+    const weekKeyForDay = buildWeekKey(weekStartForDay);
+    const weekDataForDay = (weekKeyForDay === state.weekKey) ? state.weekData : loadWeekData(weekKeyForDay, weekStartForDay);
+    const iso = toISO(date);
+    return weekDataForDay.days.find(d => d.dateISO === iso) || null;
   }
 
   function showCalendarDetail(dateISO) {
@@ -4636,38 +4773,65 @@
       return;
     }
 
+    const summary = summarizeCalendarDay(dayData);
+    const dayLabel = `${clickedDate.getMonth() + 1}月${clickedDate.getDate()}日（${DAY_NAMES[clickedDate.getDay()]}）`;
     let detailHtml = `
-      <div class="detail-header">${clickedDate.getMonth() + 1}月${clickedDate.getDate()}日のきろく</div>
+      <div class="detail-header">
+        <div>
+          <span class="detail-header__eyebrow">選択中の日付</span>
+          <strong>${dayLabel}</strong>
+        </div>
+        <div class="detail-header__stats">
+          <span>予定 ${summary.total}</span>
+          <span>完了 ${summary.done}</span>
+          <span>確認 ${summary.pending}</span>
+          <span>¥${summary.totalReward.toLocaleString()}</span>
+        </div>
+      </div>
+      <div class="calendar-detail-actions">
+        <button type="button" class="button secondary small" data-calendar-detail-action="today" data-date="${dateISO}">この日を見る</button>
+        <button type="button" class="button primary small" data-calendar-detail-action="setup" data-date="${dateISO}">予定を編集</button>
+      </div>
       <div class="detail-list">
     `;
 
-    let hasDoneTasks = false;
-
     kids.forEach(kid => {
-      const slots = dayData.slots[kid.id] || [];
-      slots.forEach(s => {
-        if (s.taskId && s.status === 'done') {
-          const task = taskMap.get(s.taskId);
-          if (task) {
-            hasDoneTasks = true;
+      const slots = (dayData.slots[kid.id] || []).filter(slot => slot.taskId);
+      const kidSummary = summary.byKid.find(item => item.kid.id === kid.id) || { total: 0, done: 0, pending: 0, todo: 0 };
+      detailHtml += `
+        <section class="calendar-detail-kid" style="--kid-color:${kid.color}">
+          <div class="calendar-detail-kid__header">
+            <span class="calendar-detail-kid__avatar"><img src="${getKidAvatarSrc(kid)}" alt="${escapeHtml(kid.name)}"></span>
+            <div>
+              <strong>${escapeHtml(kid.name)}</strong>
+              <small>${kidSummary.total ? `完了 ${kidSummary.done}/${kidSummary.total}・確認 ${kidSummary.pending}` : '予定なし'}</small>
+            </div>
+          </div>
+      `;
+      if (!slots.length) {
+        detailHtml += `<div class="calendar-detail-empty">この日の予定はありません</div>`;
+      } else {
+        slots
+          .slice()
+          .sort((a, b) => getChildSlotPriority(a) - getChildSlotPriority(b))
+          .forEach(slot => {
+            const task = taskMap.get(slot.taskId);
+            if (!task) return;
+            const statusText = slot.status === 'done' ? '承認済み' : slot.status === 'pending' ? '確認中' : '予定';
             detailHtml += `
-              <div class="detail-item" style="--kid-color: ${kid.color}">
-                <div class="detail-kid-name">${escapeHtml(kid.name)}</div>
+              <div class="detail-item detail-item--${slot.status}" style="--kid-color:${kid.color}">
                 <div class="detail-task-info">
                   <span class="icon">${task.icon}</span>
                   <span class="label">${escapeHtml(task.label)}</span>
                 </div>
-                <div class="detail-reward">+¥${task.reward}</div>
+                <span class="detail-status">${statusText}</span>
+                <div class="detail-reward">${slot.status === 'done' ? '+' : ''}¥${Number(task.reward || 0).toLocaleString()}</div>
               </div>
             `;
-          }
-        }
-      });
+          });
+      }
+      detailHtml += `</section>`;
     });
-
-    if (!hasDoneTasks) {
-      detailHtml += `<div style="text-align: center; color: var(--muted); padding: 12px 0; font-size: 0.9rem;">この日に完了したお手伝いはありません</div>`;
-    }
 
     detailHtml += `</div>`;
     detailPanel.innerHTML = detailHtml;
