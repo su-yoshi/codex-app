@@ -1687,10 +1687,10 @@
     }
   }
 
-  function saveConfig() {
+  function saveConfig(options = {}) {
     if (!storageAvailable) return;
     localStorage.setItem(CONFIG_STORAGE_KEY, JSON.stringify({ kids, tasks, slotsPerKid: SLOTS_PER_KID, familyId: state.familyId, kidPlanTemplates: state.kidPlanTemplates, rewardSettings: state.rewardSettings }));
-    if (state.familyId) saveToCloud();
+    if (options.sync !== false && state.familyId) saveToCloud();
   }
 
   function loadWeekData(weekKey, weekStart) {
@@ -1735,11 +1735,11 @@
     }
   }
 
-  function saveWeekData() {
+  function saveWeekData(options = {}) {
     if (!storageAvailable || !state.weekData || !state.weekKey) return;
     state.weekData.updatedAt = new Date().toISOString();
     localStorage.setItem(STORAGE_PREFIX + state.weekKey, JSON.stringify(state.weekData));
-    if (state.familyId) saveToCloud();
+    if (options.sync !== false && state.familyId) saveToCloud();
   }
 
   // ─── Cloud Sync ───
@@ -1770,6 +1770,16 @@
       const result = await res.json();
       if (result.data) {
         const cloud = result.data;
+        const localSnapshot = buildSyncSnapshot();
+        if (isInitial && shouldKeepLocalSnapshot(localSnapshot, cloud)) {
+          saveConfig({ sync: false });
+          saveWeekData({ sync: false });
+          const repaired = await saveToCloud();
+          if (!repaired) return false;
+          render();
+          updateSyncUI('online');
+          return true;
+        }
         
         // 設定の同期
         if (cloud.config) {
@@ -1788,18 +1798,27 @@
         }
         
         if (isInitial) {
-          saveConfig();
-          saveWeekData();
+          saveConfig({ sync: false });
+          saveWeekData({ sync: false });
           render();
         } else {
           if (cleaned) {
-            saveConfig();
-            saveWeekData();
+            saveConfig({ sync: false });
+            saveWeekData({ sync: false });
+            saveToCloud();
           }
           render();
         }
         updateSyncUI('online');
         return true;
+      }
+
+      if (isInitial) {
+        saveConfig({ sync: false });
+        saveWeekData({ sync: false });
+        const seeded = await saveToCloud();
+        if (!seeded) return false;
+        render();
       }
       updateSyncUI('online');
       return true;
@@ -1876,7 +1895,9 @@
       } catch (e) {}
 
       const localUpdatedAt = getWeekUpdatedAt(localWeek);
-      if (!localWeek || cloudUpdatedAt >= localUpdatedAt) {
+      const localScore = getWeekContentScore(localWeek);
+      const cloudScore = getWeekContentScore(cloudWeek);
+      if (!localWeek || cloudScore > localScore || (cloudScore === localScore && cloudUpdatedAt >= localUpdatedAt)) {
         localStorage.setItem(key, JSON.stringify(normalizeWeekForSync(cloudWeek)));
         changed = true;
       }
@@ -1896,6 +1917,128 @@
     const value = week.updatedAt || week.modifiedAt || week.timestamp || '';
     const time = value ? new Date(value).getTime() : 0;
     return Number.isFinite(time) ? time : 0;
+  }
+
+  function shouldKeepLocalSnapshot(localSnapshot, cloudSnapshot) {
+    const localScore = getSyncSnapshotScore(localSnapshot);
+    const cloudScore = getSyncSnapshotScore(cloudSnapshot);
+    const localDurableScore = getDurableSyncSnapshotScore(localSnapshot);
+    const cloudDurableScore = getDurableSyncSnapshotScore(cloudSnapshot);
+    if (localDurableScore <= 0) return false;
+    if (localDurableScore > cloudDurableScore) return true;
+    return localDurableScore === cloudDurableScore && localScore > cloudScore;
+  }
+
+  function getSyncSnapshotScore(snapshot) {
+    if (!snapshot) return 0;
+    let score = 0;
+    const config = snapshot.config || {};
+    if (Array.isArray(config.kids)) {
+      config.kids.forEach(kid => {
+        score += Number(kid.bank || 0) > 0 ? 6 : 0;
+        score += kid.avatarDataUrl ? 4 : 0;
+        score += Array.isArray(kid.goalHistory) ? kid.goalHistory.length * 4 : 0;
+        score += Array.isArray(kid.gachaItems) ? kid.gachaItems.length * 2 : 0;
+      });
+    }
+    const weeks = snapshot.weeks && typeof snapshot.weeks === 'object'
+      ? snapshot.weeks
+      : snapshot.weekData
+        ? { current: snapshot.weekData }
+        : {};
+    Object.values(weeks).forEach(week => {
+      score += getWeekContentScore(week);
+    });
+    return score;
+  }
+
+  function getWeekContentScore(week) {
+    if (!week) return 0;
+    let score = 0;
+    if (Array.isArray(week.days)) {
+      week.days.forEach(day => {
+        Object.values((day && day.slots) || {}).forEach(slots => {
+          (slots || []).forEach(slot => {
+            if (!slot || !slot.taskId) return;
+            score += 1;
+            if (slot.status === 'pending') score += 3;
+            if (slot.status === 'done') score += 5;
+          });
+        });
+      });
+    }
+    score += Array.isArray(week.transactions) ? week.transactions.length * 8 : 0;
+    score += Array.isArray(week.growthAlbum) ? week.growthAlbum.length * 6 : 0;
+    score += Array.isArray(week.rewardExchanges) ? week.rewardExchanges.length * 4 : 0;
+    return score;
+  }
+
+  function getDurableSyncSnapshotScore(snapshot) {
+    if (!snapshot) return 0;
+    let score = getConfigContentScore(snapshot.config || {});
+    const weeks = snapshot.weeks && typeof snapshot.weeks === 'object'
+      ? snapshot.weeks
+      : snapshot.weekData
+        ? { current: snapshot.weekData }
+        : {};
+    Object.values(weeks).forEach(week => {
+      score += getDurableWeekContentScore(week);
+    });
+    return score;
+  }
+
+  function getConfigContentScore(config) {
+    let score = 0;
+    const defaultKidNames = ['カケル', 'キララ'];
+    const defaultTasks = {
+      'task-dishes': ['おさらをはこぶ', 30],
+      'task-shoes': ['くつをそろえる', 20],
+      'task-plants': ['おはなのみずやり', 50],
+      'task-table': ['テーブルをふく', 30],
+      'task-laundry': ['せんたくものをたたむ', 60],
+      'task-books': ['本とおもちゃを片づける', 40]
+    };
+    const configKids = Array.isArray(config.kids) ? config.kids : [];
+    if (configKids.length && configKids.length !== defaultKidNames.length) score += 8;
+    configKids.forEach((kid, index) => {
+      if (kid.name && kid.name !== defaultKidNames[index]) score += 5;
+      if (Number(kid.bank || 0) > 0) score += 8;
+      if (kid.avatarDataUrl) score += 4;
+      if (Array.isArray(kid.goalHistory)) score += kid.goalHistory.length * 4;
+      if (Array.isArray(kid.gachaItems)) score += kid.gachaItems.length * 2;
+    });
+
+    const configTasks = Array.isArray(config.tasks) ? config.tasks : [];
+    if (configTasks.length && configTasks.length !== Object.keys(defaultTasks).length) score += 8;
+    configTasks.forEach(task => {
+      const baseline = defaultTasks[task.id];
+      if (!baseline) {
+        score += 5;
+      } else if (task.label !== baseline[0] || Number(task.reward || 0) !== baseline[1]) {
+        score += 5;
+      }
+    });
+    return score;
+  }
+
+  function getDurableWeekContentScore(week) {
+    if (!week) return 0;
+    let score = 0;
+    if (Array.isArray(week.days)) {
+      week.days.forEach(day => {
+        Object.values((day && day.slots) || {}).forEach(slots => {
+          (slots || []).forEach(slot => {
+            if (!slot || !slot.taskId) return;
+            if (slot.status === 'pending') score += 3;
+            if (slot.status === 'done') score += 5;
+          });
+        });
+      });
+    }
+    score += Array.isArray(week.transactions) ? week.transactions.length * 8 : 0;
+    score += Array.isArray(week.growthAlbum) ? week.growthAlbum.length * 6 : 0;
+    score += Array.isArray(week.rewardExchanges) ? week.rewardExchanges.length * 4 : 0;
+    return score;
   }
 
   function updateSyncUI(status) {
@@ -2365,16 +2508,17 @@
           alert('家族の合言葉を入力してください。使える文字は、英数字・ハイフン・アンダーバーです。');
           return;
         }
+        const previousFamilyId = state.familyId;
         elements.syncFamilyId.value = fid;
         state.familyId = fid;
         updateSyncUI('connecting');
-        saveConfig();
+        saveConfig({ sync: false });
         const connected = await loadFromCloud(true);
         if (connected) {
           alert('家族ログインできました。他のデバイスでも同じ合言葉を入力してください。');
         } else {
-          state.familyId = null;
-          saveConfig();
+          state.familyId = previousFamilyId || null;
+          saveConfig({ sync: false });
           alert('ログインできませんでした。python server.py でアプリを起動してから、もう一度お試しください。');
         }
       });
