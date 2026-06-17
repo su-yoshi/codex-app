@@ -191,6 +191,9 @@
       approvalList: document.getElementById('approvalList'),
       approveAllParent: document.getElementById('approveAllParent'),
       weekLabel: document.getElementById('weekLabel'),
+      selectedDateBar: document.getElementById('selectedDateBar'),
+      selectedDateLabel: document.getElementById('selectedDateLabel'),
+      selectedDateSub: document.getElementById('selectedDateSub'),
       starsEarned: document.getElementById('starsEarned'),
       starsTarget: document.getElementById('starsTarget'),
       progressPercent: document.getElementById('progressPercent'),
@@ -369,6 +372,7 @@
     ensureControlSelectionValid();
     
     updateWeekLabel();
+    updateSelectedDateBar();
     renderKidQuickSwitch();
     renderCards();
     renderDayQuickSwitch();
@@ -400,6 +404,34 @@
     const end = new Date(state.weekStart);
     end.setDate(end.getDate() + 6);
     elements.weekLabel.textContent = formatJapaneseDate(start) + ' 〜 ' + formatJapaneseDate(end);
+  }
+
+  function updateSelectedDateBar() {
+    if (!elements.selectedDateBar || !elements.selectedDateLabel || !elements.selectedDateSub || !state.weekData) return;
+    const day = state.weekData.days[state.controlSelection.dayIndex] || state.weekData.days[0];
+    if (!day) return;
+
+    const selectedDate = parseISO(day.dateISO);
+    const isToday = day.dateISO === toISO(new Date());
+    const summary = summarizeDayDetailed(day);
+    const tabLabels = {
+      today: '今日',
+      bank: '貯金・通帳',
+      rewards: 'ごほうび',
+      album: 'アルバム',
+      approval: '承認',
+      log: '予定',
+      setup: '設定',
+      data: 'データ管理'
+    };
+    const modeLabel = state.appMode === 'parent' ? '保護者画面' : 'こども画面';
+    const tabLabel = tabLabels[state.currentTab] || '画面';
+    const dateLabel = `${selectedDate.getMonth() + 1}月${selectedDate.getDate()}日（${DAY_NAMES[selectedDate.getDay()]}）`;
+
+    elements.selectedDateLabel.textContent = isToday ? `今日 ${dateLabel}` : dateLabel;
+    elements.selectedDateSub.textContent = `${modeLabel} / ${tabLabel} ・ 予定 ${summary.total} / 完了 ${summary.done} / 確認待ち ${summary.pending}`;
+    elements.selectedDateBar.classList.toggle('is-today', isToday);
+    elements.selectedDateBar.classList.toggle('is-parent', state.appMode === 'parent');
   }
 
   function renderCards() {
@@ -2229,6 +2261,17 @@
         if (mode === 'prev') goToWeek(state.weekOffset - 1);
         else if (mode === 'next') goToWeek(state.weekOffset + 1);
         else goToWeek(0);
+      });
+    });
+
+    document.querySelectorAll('[data-selected-date-nav]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const action = btn.dataset.selectedDateNav;
+        const currentDay = state.weekData && state.weekData.days[state.controlSelection.dayIndex];
+        const targetDate = action === 'today' || !currentDay ? new Date() : parseISO(currentDay.dateISO);
+        if (action === 'prev') targetDate.setDate(targetDate.getDate() - 1);
+        if (action === 'next') targetDate.setDate(targetDate.getDate() + 1);
+        goToWeekSpecific(targetDate, getDayIndexInWeek(targetDate));
       });
     });
 
@@ -4101,6 +4144,14 @@
     start.setHours(0, 0, 0, 0);
     const diff = Math.round((today - start) / (1000 * 60 * 60 * 24));
     return diff >= 0 && diff < 7 ? diff : 0;
+  }
+
+  function getDayIndexInWeek(date) {
+    const target = new Date(date);
+    target.setHours(0, 0, 0, 0);
+    const start = startOfWeek(target);
+    const diff = Math.round((target - start) / (1000 * 60 * 60 * 24));
+    return Math.max(0, Math.min(6, diff));
   }
 
   function normalizeFamilyId(value) {

@@ -1536,3 +1536,115 @@ body.is-child-mode .child-card__eyebrow {
     justify-content: center;
   }
 }
+
+/* Persistent selected date context */
+.selected-date-bar {
+  position: sticky;
+  top: 0;
+  z-index: 950;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  margin: 12px 0 18px;
+  padding: 12px 14px;
+  border: 1px solid #cfe0f3;
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 14px 40px rgba(15, 23, 42, 0.08);
+  backdrop-filter: blur(16px);
+}
+
+.selected-date-bar.is-parent {
+  border-color: #d7dce8;
+  background: rgba(248, 250, 252, 0.94);
+}
+
+.selected-date-bar.is-today {
+  border-color: #a7c8ff;
+  box-shadow: 0 16px 42px rgba(59, 130, 246, 0.12);
+}
+
+.selected-date-bar__main {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.selected-date-bar__eyebrow {
+  color: #d97706;
+  font-size: 0.68rem;
+  font-weight: 950;
+  letter-spacing: 0.24em;
+}
+
+.selected-date-bar strong {
+  color: #0f172a;
+  font-size: 1.05rem;
+  font-weight: 950;
+  line-height: 1.25;
+}
+
+.selected-date-bar small {
+  color: #52647a;
+  font-size: 0.78rem;
+  font-weight: 850;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.selected-date-bar__actions {
+  display: grid;
+  grid-template-columns: auto auto auto;
+  gap: 8px;
+}
+
+.selected-date-nav,
+.selected-date-today {
+  appearance: none;
+  min-height: 38px;
+  border-radius: 999px;
+  border: 1px solid #d7e4f2;
+  background: #ffffff;
+  color: #334155;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 0.82rem;
+  font-weight: 950;
+  padding: 0 14px;
+  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+  white-space: nowrap;
+}
+
+.selected-date-today {
+  border-color: #3b82f6;
+  background: linear-gradient(135deg, #3b82f6, #6d5dfc);
+  color: #ffffff;
+  box-shadow: 0 10px 24px rgba(59, 130, 246, 0.2);
+}
+
+.selected-date-nav:hover,
+.selected-date-today:hover {
+  transform: translateY(-1px);
+  border-color: #93b9ef;
+}
+
+@media (max-width: 760px) {
+  .selected-date-bar {
+    grid-template-columns: 1fr;
+    gap: 10px;
+    margin: 8px 0 14px;
+    border-radius: 18px;
+  }
+
+  .selected-date-bar__actions {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .selected-date-nav,
+  .selected-date-today {
+    min-height: 42px;
+    padding: 0 8px;
+    font-size: 0.78rem;
+  }
+}

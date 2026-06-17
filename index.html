@@ -13,7 +13,7 @@
     <link rel="icon" href="icons/icon-192.png">
     
     <!-- Styles -->
-      <link rel="stylesheet" href="styles.css?v=52">
+      <link rel="stylesheet" href="styles.css?v=53">
 </head>
 <body>
   <div class="app">
@@ -33,6 +33,19 @@
         <button class="button ghost" data-week-nav="next" type="button">次の週 →</button>
       </nav>
     </header>
+
+    <section class="selected-date-bar" id="selectedDateBar" aria-label="選択中の日付">
+      <div class="selected-date-bar__main">
+        <span class="selected-date-bar__eyebrow">選択中の日付</span>
+        <strong id="selectedDateLabel">今日</strong>
+        <small id="selectedDateSub">予定を読み込み中</small>
+      </div>
+      <div class="selected-date-bar__actions" aria-label="日付の移動">
+        <button type="button" class="selected-date-nav" data-selected-date-nav="prev">前の日</button>
+        <button type="button" class="selected-date-today" data-selected-date-nav="today">今日へ</button>
+        <button type="button" class="selected-date-nav" data-selected-date-nav="next">次の日</button>
+      </div>
+    </section>
 
     <nav class="tab-nav child-nav" id="childNav" aria-label="こどもメニュー">
       <button class="tab-btn is-active" data-tab="today">
@@ -498,7 +511,7 @@
   </div>
 
   <!-- Scripts -->
-    <script src="app.js?v=62"></script>
+    <script src="app.js?v=63"></script>
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
