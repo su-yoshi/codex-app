@@ -420,6 +420,7 @@
     const activeKid = getActiveKid();
     const summary = activeKid ? summarizeKidDay(day, activeKid.id) : summarizeDayDetailed(day);
     const char = CHARACTERS[activeKid && activeKid.characterId] || CHARACTERS.cloudon;
+    const activeItemEvent = activeKid ? getActiveItemEvent(activeKid) : null;
     const kidName = activeKid ? activeKid.name : 'みんな';
     const lead = summary.todo > 0
       ? `あと${summary.todo}こ。上から1つずつ進めよう。`
@@ -441,6 +442,12 @@
           <span class="ip-family-hero__avatar"><img src="${char.img}" alt="${escapeHtml(char.name)}"></span>
           <span>${escapeHtml(char.name)}が今日のお手伝いを見守っているよ</span>
         </div>
+        ${activeItemEvent ? `
+          <div class="today-item-event today-item-event--${escapeHtml(activeItemEvent.effect || 'board-event')}">
+            <strong>${escapeHtml(activeItemEvent.icon || '✨')} ${escapeHtml(activeItemEvent.name || 'アイテム')}</strong>
+            <span>${escapeHtml(activeItemEvent.message || '作戦イベントが発動中です。')}</span>
+          </div>
+        ` : ''}
       </div>
     `;
     return hero;
@@ -2495,8 +2502,14 @@
     if (gachaArea) {
       gachaArea.addEventListener('click', event => {
         const requestButton = event.target.closest('[data-reward-request]');
-        if (!requestButton) return;
-        requestRewardExchange(requestButton.dataset.rewardRequest);
+        if (requestButton) {
+          requestRewardExchange(requestButton.dataset.rewardRequest);
+          return;
+        }
+        const useButton = event.target.closest('[data-gacha-use]');
+        if (useButton) {
+          useGachaItem(useButton.dataset.kidId, useButton.dataset.itemId);
+        }
       });
     }
     
@@ -3549,13 +3562,14 @@
             const tickets = kid.gachaTickets || 0;
             const avatarSrc = getKidAvatarSrc(kid);
             const latestItemEvent = Array.isArray(kid.itemEvents) ? kid.itemEvents[0] : null;
+            const unusedCount = getKidGachaInventory(kid).reduce((sum, entry) => sum + entry.count, 0);
             return `
               <div class="gacha-kid-card" style="--kid-color:${kid.color}">
                 <div class="gacha-kid-card__profile">
                   <img src="${avatarSrc}" alt="${escapeHtml(kid.name)}">
                   <div>
                     <strong>${escapeHtml(kid.name)}</strong>
-                    <span>チケット ${tickets}枚</span>
+                    <span>チケット ${tickets}枚 / 未使用 ${unusedCount}こ</span>
                     ${latestItemEvent ? `<small>${escapeHtml(latestItemEvent.icon || '✨')} ${escapeHtml(getItemEffectLabel(latestItemEvent.effect))}: ${escapeHtml(latestItemEvent.name)}</small>` : ''}
                   </div>
                 </div>
@@ -3566,30 +3580,44 @@
         </div>
         <div class="item-event-ledger">
           <div class="item-event-ledger__header">
-            <strong>アイテム履歴</strong>
-            <span>お金は増減しない、作戦ボード用のイベントです。</span>
+            <strong>アイテムを使う</strong>
+            <span>使うと作戦ボードにイベントが出ます。お金は増減しません。</span>
           </div>
           ${kids.map(kid => {
+            const inventory = getKidGachaInventory(kid);
             const events = Array.isArray(kid.itemEvents) ? kid.itemEvents.slice(0, 3) : [];
-            if (!events.length) {
+            if (!inventory.length && !events.length) {
               return `
                 <div class="item-event-ledger__empty" style="--kid-color:${kid.color}">
                   <strong>${escapeHtml(kid.name)}</strong>
-                  <span>まだアイテムイベントはありません。</span>
+                  <span>まだアイテムはありません。</span>
                 </div>
               `;
             }
             return `
               <div class="item-event-ledger__kid" style="--kid-color:${kid.color}">
                 <strong>${escapeHtml(kid.name)}</strong>
-                <ul>
+                ${inventory.length ? `
+                  <div class="gacha-inventory-list">
+                    ${inventory.map(entry => `
+                      <article class="gacha-inventory-item">
+                        <div>
+                          <span>${escapeHtml(entry.item.icon)} ${escapeHtml(entry.item.name)} ${entry.count > 1 ? '×' + entry.count : ''}</span>
+                          <small>${escapeHtml(getItemUseHint(entry.item))}</small>
+                        </div>
+                        <button type="button" class="button primary small" data-gacha-use="1" data-kid-id="${escapeHtml(kid.id)}" data-item-id="${escapeHtml(entry.item.id)}">使う</button>
+                      </article>
+                    `).join('')}
+                  </div>
+                ` : `<p class="small-text">使えるアイテムはありません。</p>`}
+                ${events.length ? `<ul class="used-item-list">
                   ${events.map(event => `
                     <li>
                       <span>${escapeHtml(event.icon || '✨')} ${escapeHtml(event.name || 'アイテム')}</span>
-                      <small>${escapeHtml(getItemEffectLabel(event.effect))} / お金の変更なし</small>
+                      <small>使用済み: ${escapeHtml(getItemEffectLabel(event.effect))} / お金の変更なし</small>
                     </li>
                   `).join('')}
-                </ul>
+                </ul>` : ''}
               </div>
             `;
           }).join('')}
@@ -3775,11 +3803,40 @@
     
     kid.gachaItems = kid.gachaItems || [];
     kid.gachaItems.push(item.id);
-    applyGachaItemEffect(kid, item);
     saveConfig();
     showGachaAnimation(item);
     render();
   };
+
+  function getKidGachaInventory(kid) {
+    if (!kid) return [];
+    const counts = new Map();
+    (kid.gachaItems || []).forEach(itemId => {
+      counts.set(itemId, (counts.get(itemId) || 0) + 1);
+    });
+    (kid.itemEvents || []).forEach(event => {
+      if (!event || !event.itemId || !counts.has(event.itemId)) return;
+      counts.set(event.itemId, Math.max(0, counts.get(event.itemId) - 1));
+    });
+    return [...counts.entries()]
+      .map(([itemId, count]) => ({ item: GACHA_ITEMS.find(item => item.id === itemId), count }))
+      .filter(entry => entry.item && entry.count > 0);
+  }
+
+  function useGachaItem(kidId, itemId) {
+    const kid = kids.find(k => k.id === kidId);
+    const item = GACHA_ITEMS.find(candidate => candidate.id === itemId);
+    if (!kid || !item) return;
+    const index = (kid.gachaItems || []).indexOf(itemId);
+    if (index < 0) {
+      showGoalToast('このアイテムはもう使えません。', false);
+      return;
+    }
+    kid.gachaItems.splice(index, 1);
+    applyGachaItemEffect(kid, item);
+    saveConfig();
+    render();
+  }
 
   function applyGachaItemEffect(kid, item) {
     if (!kid || !item) return;
@@ -3816,6 +3873,22 @@
     }
   }
 
+  function getItemUseHint(item) {
+    if (!item) return '';
+    switch (item.effect) {
+      case 'shortcut':
+        return '作戦ボードに近道イベントを出す';
+      case 'cheer':
+        return '応援メッセージを作戦ボードに出す';
+      case 'extra-mission':
+        return '今日もう1つやるきっかけを出す';
+      case 'family-mission':
+        return '家族で協力するイベントを出す';
+      default:
+        return '作戦ボードに小さなイベントを出す';
+    }
+  }
+
   function getItemEffectLabel(effect) {
     if (effect === 'shortcut') return '近道';
     if (effect === 'cheer') return '応援';
@@ -3843,7 +3916,7 @@
       
       document.getElementById('gachaResultIcon').textContent = item.icon;
       document.getElementById('gachaResultName').textContent = item.name;
-      document.getElementById('gachaResultDesc').textContent = `${item.desc} ${getItemEffectLabel(item.effect)}イベントとして作戦ボードに残ります。`;
+      document.getElementById('gachaResultDesc').textContent = `${item.desc} 「アイテムを使う」から使うと、作戦ボードにイベントが出ます。`;
       
       playCoinSound();
       if (window.confetti) {
@@ -3877,12 +3950,15 @@
     if (!kid) return;
     
     gridArea.innerHTML = GACHA_ITEMS.map(item => {
-      const hasItem = (kid.gachaItems || []).includes(item.id);
+      const inventoryEntry = getKidGachaInventory(kid).find(entry => entry.item.id === item.id);
+      const count = inventoryEntry ? inventoryEntry.count : 0;
+      const usedCount = (kid.itemEvents || []).filter(event => event.itemId === item.id).length;
+      const hasItem = count > 0 || usedCount > 0;
       return `
         <div class="collection-item ${hasItem ? '' : 'is-empty'}">
           <span class="icon">${hasItem ? item.icon : '❓'}</span>
           <span class="name">${hasItem ? item.name : '???'}</span>
-          <small>${hasItem ? escapeHtml(getItemEffectLabel(item.effect)) : '未発見'}</small>
+          <small>${hasItem ? `${escapeHtml(getItemEffectLabel(item.effect))}${count ? ' / 未使用 ' + count : ' / 使用済み'}` : '未発見'}</small>
         </div>
       `;
     }).join('');

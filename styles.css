@@ -1434,3 +1434,105 @@ body.is-child-mode .child-card__eyebrow {
     align-items: start !important;
   }
 }
+
+/* Usable gacha items */
+.gacha-inventory-list {
+  display: grid;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.gacha-inventory-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  border-radius: 14px;
+  border: 1px solid color-mix(in srgb, var(--kid-color, #3b82f6) 22%, #d7e4f2);
+  background: #ffffff;
+}
+
+.gacha-inventory-item span,
+.gacha-inventory-item small {
+  display: block;
+}
+
+.gacha-inventory-item span {
+  color: #142033;
+  font-size: 0.92rem;
+  font-weight: 950;
+  overflow-wrap: anywhere;
+}
+
+.gacha-inventory-item small {
+  margin-top: 3px;
+  color: #52647a;
+  font-size: 0.74rem;
+  font-weight: 850;
+  line-height: 1.4;
+}
+
+.used-item-list {
+  margin-top: 10px !important;
+  padding-top: 10px !important;
+  border-top: 1px solid #d7e4f2;
+}
+
+.today-item-event {
+  display: grid;
+  gap: 3px;
+  margin-top: 12px;
+  padding: 12px;
+  border-radius: 16px;
+  border: 1px solid #d7e4f2;
+  background: #ffffff;
+}
+
+.today-item-event strong,
+.today-item-event span {
+  display: block;
+}
+
+.today-item-event strong {
+  color: #142033;
+  font-weight: 950;
+}
+
+.today-item-event span {
+  color: #52647a;
+  font-size: 0.86rem;
+  font-weight: 850;
+  line-height: 1.45;
+}
+
+.today-item-event--shortcut {
+  background: #ecfeff;
+  border-color: #a5f3fc;
+}
+
+.today-item-event--cheer {
+  background: #fff7ed;
+  border-color: #fed7aa;
+}
+
+.today-item-event--extra-mission {
+  background: #f0fdf4;
+  border-color: #bbf7d0;
+}
+
+.today-item-event--family-mission {
+  background: #f5f3ff;
+  border-color: #ddd6fe;
+}
+
+@media (max-width: 520px) {
+  .gacha-inventory-item {
+    grid-template-columns: 1fr;
+  }
+
+  .gacha-inventory-item .button {
+    width: 100%;
+    justify-content: center;
+  }
+}
