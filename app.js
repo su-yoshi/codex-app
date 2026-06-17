@@ -342,6 +342,7 @@
   function enterParentMode() {
     state.appMode = 'parent';
     state.editMode = true;
+    ensureActualTodaySelected();
     updateAppMode();
     switchTab('approval');
   }
@@ -5182,6 +5183,7 @@
 
   function openQuickReportModal(kidId) {
     if (!elements.quickReportModal || !elements.quickReportGrid) return;
+    ensureActualTodaySelected();
     const kid = kids.find(item => item.id === kidId) || getActiveKid();
     if (!kid) return;
     state.quickReportKidId = kid.id;
@@ -5239,14 +5241,15 @@
   }
 
   function getTodayTaskReportStatus(kidId, taskId) {
-    const day = state.weekData && state.weekData.days[state.controlSelection.dayIndex];
+    const day = getActualTodayDay();
     const slots = (day && day.slots[kidId]) || [];
     const matched = slots.find(slot => slot.taskId === taskId && slot.status && slot.status !== 'unset');
     return matched ? matched.status : 'unset';
   }
 
   function reportTasksForToday(kidId, taskIds) {
-    const day = state.weekData && state.weekData.days[state.controlSelection.dayIndex];
+    ensureActualTodaySelected();
+    const day = getActualTodayDay();
     if (!day || !day.slots[kidId]) return { reported: 0, skipped: taskIds.length };
 
     let reported = 0;
@@ -5286,6 +5289,29 @@
     slot.reportedAt = new Date().toISOString();
     slot.approvedAt = null;
     return true;
+  }
+
+  function ensureActualTodaySelected() {
+    const today = new Date();
+    const todayISO = toISO(today);
+    const currentHasToday = state.weekData && state.weekData.days && state.weekData.days.some(day => day.dateISO === todayISO);
+    if (!currentHasToday) {
+      state.weekStart = startOfWeek(today);
+      state.weekKey = buildWeekKey(state.weekStart);
+      const currentWeekStart = startOfWeek(new Date());
+      state.weekOffset = Math.round((state.weekStart - currentWeekStart) / (1000 * 60 * 60 * 24 * 7));
+      state.weekData = loadWeekData(state.weekKey, state.weekStart);
+      ensureWeekHasPlan();
+    }
+    const todayIndex = state.weekData.days.findIndex(day => day.dateISO === todayISO);
+    if (todayIndex >= 0) state.controlSelection.dayIndex = todayIndex;
+    ensureControlSelectionValid();
+  }
+
+  function getActualTodayDay() {
+    if (!state.weekData) return null;
+    const todayISO = toISO(new Date());
+    return state.weekData.days.find(day => day.dateISO === todayISO) || null;
   }
 
   function renderTaskLibrary() {
